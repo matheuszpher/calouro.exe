@@ -1,0 +1,749 @@
+fileFormatVersion: 2
+guid: ab90318860455be41ab1c08b5aca8406
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 198762441466902690
+    second: campus_sheet2_0
+  - first:
+      213: 2067104567899234760
+    second: campus_sheet2_1
+  - first:
+      213: 243060080675482189
+    second: campus_sheet2_2
+  - first:
+      213: 8248875344947400063
+    second: campus_sheet2_3
+  - first:
+      213: -7001402451050960799
+    second: campus_sheet2_4
+  - first:
+      213: 5689195514697155127
+    second: campus_sheet2_5
+  - first:
+      213: -9179748288693737629
+    second: campus_sheet2_6
+  - first:
+      213: 3529578761584033010
+    second: campus_sheet2_7
+  - first:
+      213: 3699133400176843665
+    second: campus_sheet2_8
+  - first:
+      213: -5442856354665034376
+    second: campus_sheet2_9
+  - first:
+      213: -5490014831770134190
+    second: campus_sheet2_10
+  - first:
+      213: 2410622342303713383
+    second: campus_sheet2_11
+  - first:
+      213: 3151169961719165249
+    second: campus_sheet2_12
+  - first:
+      213: 3077031861253636974
+    second: campus_sheet2_13
+  - first:
+      213: 7351669110523959922
+    second: campus_sheet2_14
+  - first:
+      213: -9171412345698498766
+    second: campus_sheet2_15
+  - first:
+      213: 470784505208946707
+    second: campus_sheet2_16
+  - first:
+      213: 5908350811076643536
+    second: campus_sheet2_17
+  - first:
+      213: -2439168279811188173
+    second: campus_sheet2_18
+  - first:
+      213: -598686149306215899
+    second: campus_sheet2_19
+  - first:
+      213: -8782770513081507373
+    second: campus_sheet2_20
+  - first:
+      213: -2680817989691854921
+    second: campus_sheet2_21
+  - first:
+      213: -4262128450641355277
+    second: campus_sheet2_22
+  - first:
+      213: -136640345225733284
+    second: campus_sheet2_23
+  - first:
+      213: -496105932436256245
+    second: campus_sheet2_24
+  - first:
+      213: -1353076334266966960
+    second: campus_sheet2_25
+  - first:
+      213: 429833027449732532
+    second: campus_sheet2_26
+  - first:
+      213: 7969643988078628431
+    second: campus_sheet2_27
+  - first:
+      213: 2662627085658019180
+    second: campus_sheet2_28
+  - first:
+      213: 283633641307392728
+    second: campus_sheet2_29
+  - first:
+      213: -7586564352394282881
+    second: campus_sheet2_30
+  - first:
+      213: 705638757949659613
+    second: campus_sheet2_31
+  - first:
+      213: -2620561548704434956
+    second: campus_sheet2_32
+  - first:
+      213: -4383700273236350548
+    second: campus_sheet2_33
+  - first:
+      213: -7308466509058691087
+    second: campus_sheet2_34
+  - first:
+      213: 7630363006022304473
+    second: campus_sheet2_35
+  - first:
+      213: -7892599913440117350
+    second: campus_sheet2_36
+  - first:
+      213: -158042038409574693
+    second: campus_sheet2_37
+  - first:
+      213: 27513110706003244
+    second: campus_sheet2_38
+  - first:
+      213: 1534441128671136412
+    second: campus_sheet2_39
+  - first:
+      213: -2739151575491736196
+    second: campus_sheet2_40
+  - first:
+      213: -5023640267730593857
+    second: campus_sheet2_41
+  - first:
+      213: -6114410372057531702
+    second: campus_sheet2_42
+  - first:
+      213: -1554434825763403922
+    second: campus_sheet2_43
+  - first:
+      213: 7855526427775355201
+    second: campus_sheet2_44
+  - first:
+      213: 2046655726701045459
+    second: campus_sheet2_45
+  - first:
+      213: 4118175166192288897
+    second: campus_sheet2_46
+  - first:
+      213: 118518163781028537
+    second: campus_sheet2_47
+  - first:
+      213: 4262323545407105265
+    second: campus_sheet2_48
+  - first:
+      213: -771361692866656578
+    second: campus_sheet2_49
+  - first:
+      213: 1749390010182952066
+    second: campus_sheet2_50
+  - first:
+      213: -4913813807385956225
+    second: campus_sheet2_51
+  - first:
+      213: -7980001414300360785
+    second: campus_sheet2_52
+  - first:
+      213: 7910450550974799298
+    second: campus_sheet2_53
+  - first:
+      213: -7688687596395754954
+    second: campus_sheet2_54
+  - first:
+      213: -1621854219429582668
+    second: campus_sheet2_55
+  - first:
+      213: -1507417728877472824
+    second: campus_sheet2_56
+  - first:
+      213: 4455284901577454685
+    second: campus_sheet2_57
+  - first:
+      213: 6836056349120224002
+    second: campus_sheet2_58
+  - first:
+      213: 5735199712720797200
+    second: campus_sheet2_59
+  - first:
+      213: 1106314117214843518
+    second: campus_sheet2_60
+  - first:
+      213: -3825837030641284951
+    second: campus_sheet2_61
+  - first:
+      213: 4151596330255010200
+    second: campus_sheet2_62
+  - first:
+      213: -244877503242158480
+    second: campus_sheet2_63
+  - first:
+      213: -7030864006097629223
+    second: campus_sheet2_64
+  - first:
+      213: -285715384164069718
+    second: campus_sheet2_65
+  - first:
+      213: 7117965155237008358
+    second: campus_sheet2_66
+  - first:
+      213: 3649011704093829361
+    second: campus_sheet2_67
+  - first:
+      213: 8161988191713025863
+    second: campus_sheet2_68
+  - first:
+      213: 8344231254217647244
+    second: campus_sheet2_69
+  - first:
+      213: 6642477937277323139
+    second: campus_sheet2_70
+  - first:
+      213: 2162793379595016638
+    second: campus_sheet2_71
+  - first:
+      213: -667983003258288993
+    second: campus_sheet2_72
+  - first:
+      213: -2835069535935019045
+    second: campus_sheet2_73
+  - first:
+      213: 301158497260584637
+    second: campus_sheet2_74
+  - first:
+      213: -7228104087805713553
+    second: campus_sheet2_75
+  - first:
+      213: 8483075071266912827
+    second: campus_sheet2_76
+  - first:
+      213: 2714504758894568909
+    second: campus_sheet2_77
+  - first:
+      213: 7721010808012185317
+    second: campus_sheet2_78
+  - first:
+      213: -3494702949495912513
+    second: campus_sheet2_79
+  - first:
+      213: -5958704963600802082
+    second: campus_sheet2_80
+  - first:
+      213: 1342555528663185944
+    second: campus_sheet2_81
+  - first:
+      213: -5600655997709355972
+    second: campus_sheet2_82
+  - first:
+      213: 982508558772443713
+    second: campus_sheet2_83
+  - first:
+      213: 3856330790196385033
+    second: campus_sheet2_84
+  - first:
+      213: -501916133640044637
+    second: campus_sheet2_85
+  - first:
+      213: 8039574668404863449
+    second: campus_sheet2_86
+  - first:
+      213: 8332253113000539448
+    second: campus_sheet2_87
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 1
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: floor
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 862
+        width: 143
+        height: 135
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 225929f0454bac637217c47645cc5d55
+      internalID: 145773225
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: floorB
+      rect:
+        serializedVersion: 2
+        x: 213
+        y: 862
+        width: 139
+        height: 135
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3da81e1390bde7662388d46b1c05f1b0
+      internalID: -1925961275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wallH
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 690
+        width: 228
+        height: 110
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7e861af8495944ab39e74ecdf4e2a520
+      internalID: 1298303615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wallV
+      rect:
+        serializedVersion: 2
+        x: 276
+        y: 690
+        width: 222
+        height: 110
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0b3cfb73a6ea1b70393ef65470ad2827
+      internalID: 194539210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pillar
+      rect:
+        serializedVersion: 2
+        x: 744
+        y: 694
+        width: 192
+        height: 107
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 71b5eaef52c312823486363062363284
+      internalID: 1513731159
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wallCap
+      rect:
+        serializedVersion: 2
+        x: 1337
+        y: 716
+        width: 154
+        height: 75
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 45c39afb9da693bcb03132ac3e96eeac
+      internalID: -1631691479
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: doorClosed
+      rect:
+        serializedVersion: 2
+        x: 424
+        y: 515
+        width: 161
+        height: 115
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 22678117ecaf332f11516b8aae535b21
+      internalID: 313639963
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: doorOpen
+      rect:
+        serializedVersion: 2
+        x: 617
+        y: 518
+        width: 289
+        height: 111
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9d093510b8f41f5757c04a31da4b6e79
+      internalID: -408230198
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: window
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 518
+        width: 364
+        height: 112
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4f3f5cead4ddf50b2da3b10d6d14b5af
+      internalID: 1427086029
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: board
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 175
+        width: 264
+        height: 86
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 37f3880e0ab6ec720bc82c1e539e94be
+      internalID: -413339702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: muralBlue
+      rect:
+        serializedVersion: 2
+        x: 1221
+        y: 537
+        width: 271
+        height: 91
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4e222caf65135a882d99c7b10c17e536
+      internalID: 1951270568
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: teacherDesk
+      rect:
+        serializedVersion: 2
+        x: 1071
+        y: 326
+        width: 154
+        height: 110
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f37cd2f663f6b91da333b598e76410fc
+      internalID: 397572801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chair
+      rect:
+        serializedVersion: 2
+        x: 947
+        y: 333
+        width: 79
+        height: 105
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 95e23ae7063175acdc55267f1f1575dd
+      internalID: -873413491
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: deskStudent
+      rect:
+        serializedVersion: 2
+        x: 351
+        y: 166
+        width: 79
+        height: 90
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d64f1ff6b401824f0be59d8249334428
+      internalID: -2020424586
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trash
+      rect:
+        serializedVersion: 2
+        x: 1211
+        y: 167
+        width: 63
+        height: 94
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9db44f6633801e33056e7ee528a60b1a
+      internalID: -1587471596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ac
+      rect:
+        serializedVersion: 2
+        x: 1302
+        y: 178
+        width: 190
+        height: 75
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 18941b335d3a3e0731e8872d7437ae6f
+      internalID: 151932200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 3d77b21c9bf62ba42ac7286ab1f42852
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      ac: 151932200
+      board: -413339702
+      chair: -873413491
+      deskStudent: -2020424586
+      doorClosed: 313639963
+      doorOpen: -408230198
+      floor: 145773225
+      floorB: -1925961275
+      muralBlue: 1951270568
+      pillar: 1513731159
+      teacherDesk: 397572801
+      trash: -1587471596
+      wallCap: -1631691479
+      wallH: 1298303615
+      wallV: 194539210
+      window: 1427086029
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

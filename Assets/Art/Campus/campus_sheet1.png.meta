@@ -1,0 +1,335 @@
+fileFormatVersion: 2
+guid: e5f05d42dd530f94fa705e6dae8d8e5e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2672360288818788086
+    second: campus_sheet1_0
+  - first:
+      213: -8649600281167795956
+    second: campus_sheet1_1
+  - first:
+      213: -5790543099769964177
+    second: campus_sheet1_2
+  - first:
+      213: 2576518139744220757
+    second: campus_sheet1_3
+  - first:
+      213: -1403250368327640859
+    second: campus_sheet1_4
+  - first:
+      213: 359419833017674838
+    second: campus_sheet1_5
+  - first:
+      213: 6722503512327771447
+    second: campus_sheet1_6
+  - first:
+      213: -5357486708962022825
+    second: campus_sheet1_7
+  - first:
+      213: 896429021151624859
+    second: campus_sheet1_8
+  - first:
+      213: 5087427849893583103
+    second: campus_sheet1_9
+  - first:
+      213: 4313360298250977081
+    second: campus_sheet1_10
+  - first:
+      213: 1020424879663681930
+    second: campus_sheet1_11
+  - first:
+      213: 8748250790936138447
+    second: campus_sheet1_12
+  - first:
+      213: -661556878732998357
+    second: campus_sheet1_13
+  - first:
+      213: 1862917663697394082
+    second: campus_sheet1_14
+  - first:
+      213: -3275930118765834824
+    second: campus_sheet1_15
+  - first:
+      213: 2992775686936982225
+    second: campus_sheet1_16
+  - first:
+      213: 7847149970226123483
+    second: campus_sheet1_17
+  - first:
+      213: -3281003047206444049
+    second: campus_sheet1_18
+  - first:
+      213: -6438929804018120114
+    second: campus_sheet1_19
+  - first:
+      213: -701938264038332015
+    second: campus_sheet1_20
+  - first:
+      213: 9147771370166396143
+    second: campus_sheet1_21
+  - first:
+      213: 6155038472714016222
+    second: campus_sheet1_22
+  - first:
+      213: 6879026213150762833
+    second: campus_sheet1_23
+  - first:
+      213: -4182921997454433008
+    second: campus_sheet1_24
+  - first:
+      213: -5857804241921812125
+    second: campus_sheet1_25
+  - first:
+      213: -7677347342062646668
+    second: campus_sheet1_26
+  - first:
+      213: -5263732807587472205
+    second: campus_sheet1_27
+  - first:
+      213: -8797298722926654913
+    second: campus_sheet1_28
+  - first:
+      213: 4058687723171270428
+    second: campus_sheet1_29
+  - first:
+      213: 6990091576443234230
+    second: campus_sheet1_30
+  - first:
+      213: -2613533109973380310
+    second: campus_sheet1_31
+  - first:
+      213: -264361809218368351
+    second: campus_sheet1_32
+  - first:
+      213: 6603978681203135229
+    second: campus_sheet1_33
+  - first:
+      213: 6338970380258664378
+    second: campus_sheet1_34
+  - first:
+      213: 8742430717487231249
+    second: campus_sheet1_35
+  - first:
+      213: -4015608838294175275
+    second: campus_sheet1_36
+  - first:
+      213: -900228192166328595
+    second: campus_sheet1_37
+  - first:
+      213: 674120182634712352
+    second: campus_sheet1_38
+  - first:
+      213: 2418691152442913516
+    second: campus_sheet1_39
+  - first:
+      213: 6214601338532197228
+    second: campus_sheet1_40
+  - first:
+      213: -8034783264642069352
+    second: campus_sheet1_41
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 1
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: whiteboard
+      rect:
+        serializedVersion: 2
+        x: 766
+        y: 865
+        width: 729
+        height: 137
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f199343ec9856e8e9e649f0f884062c5
+      internalID: -455694934
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: clock
+      rect:
+        serializedVersion: 2
+        x: 1294
+        y: 129
+        width: 92
+        height: 86
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0ea3733a984fc9f27c63bd09ba7deb75
+      internalID: -439276095
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: fireExt
+      rect:
+        serializedVersion: 2
+        x: 1419
+        y: 127
+        width: 72
+        height: 125
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 67fceecafbb573e5cff45d416b6e487f
+      internalID: 1624559179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: windowHedge
+      rect:
+        serializedVersion: 2
+        x: 29
+        y: 446
+        width: 302
+        height: 85
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0286b6395244315b867eb8d8ae7519b4
+      internalID: -1853953921
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 824547805b5b2a74c9356e4a6a0768f9
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      clock: -439276095
+      fireExt: 1624559179
+      whiteboard: -455694934
+      windowHedge: -1853953921
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
