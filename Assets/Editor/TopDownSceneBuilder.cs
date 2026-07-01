@@ -41,6 +41,7 @@ public static class TopDownSceneBuilder
         }
         s_white = white;
         roomCounter = 0;
+        interiorBldgCounter = 0;
         interiorsRoot = null;
 
         var old = GameObject.Find("Environment");
@@ -298,16 +299,28 @@ public static class TopDownSceneBuilder
     // Posições-chave (compartilhadas entre os montadores).
     private static readonly Vector3 SpawnPos = new Vector3(-8f, 3f, 0f);   // Convivência (005)
     private static readonly Vector2 PosCoordenador = new Vector2(-8f, 6f); // Convivência
-    private static readonly Vector2 PosNatan = new Vector2(-22f, 2f);      // RU (007)
     private static readonly Vector2 PosBloco1 = new Vector2(2f, 10f);      // Bloco 1 (001)
-    private static readonly Vector2 PosBloco1Front = new Vector2(-2.9f, 10f); // frente da porta do Bloco 1
+    private static readonly Vector2 PosBloco1Front = new Vector2(2f, 4.4f); // frente da porta do Bloco 1
     private static readonly Vector2 PosPortal = new Vector2(2f, -14f);     // Bloco 3 (003)
     private static readonly Vector2 PosMazePortal = new Vector2(-6f, -6f); // portal da prova (área aberta)
     private static readonly Vector3 ReturnPos = new Vector3(-8f, 3f, 0f);
 
     private static Sprite s_white;
     private static int roomCounter;
+    private static int interiorBldgCounter;
     private static Transform interiorsRoot;
+
+    // Interiores (top-down) usados após a transição de tela.
+    private const string BlocoInteriorPath = "Assets/Art/Campus/bloco_pixel.png";
+    private const string RUInteriorPath = "Assets/Art/Campus/ru_pixel.png";
+    // Exteriores (perspectiva) mostrados no campus. Todos 1122x1402 (aspect 0.8).
+    private const string Bloco1ExtPath = "Assets/Art/Campus/bloco1_ext.png";
+    private const string Bloco2ExtPath = "Assets/Art/Campus/bloco2_ext.png";
+    private const string Bloco34ExtPath = "Assets/Art/Campus/bloco34_ext.png";
+    private const string RUExtPath = "Assets/Art/Campus/ru_ext.png";
+    private const string GrassTilePath = "Assets/Art/Env/grass_tile.png";
+    private const string BushPath = "Assets/Art/Env/bush.png";
+    private const string TreePath = "Assets/Art/Env/tree.png";
 
     private static void BuildCampus(Transform root, Sprite white)
     {
@@ -318,9 +331,14 @@ public static class TopDownSceneBuilder
         var didatico = new Color(0.22f, 0.34f, 0.50f); // blocos 001-004 (azul)
         var servico = new Color(0.34f, 0.40f, 0.24f);  // 005/006/007/008/009 (verde)
 
-        // Chão base do campus inteiro.
-        CreateQuad(root, "Ground", Vector2.zero,
-            new Vector2(MapXMax - MapXMin, MapYMax - MapYMin), ground, white, -10, false);
+        // Chão base do campus inteiro — grama em tile que se repete (1 draw só).
+        Sprite grass = GetEnvSprite(GrassTilePath, 32f, repeat: true);
+        if (grass != null)
+            TiledSprite(root, "Ground", Vector2.zero,
+                new Vector2(MapXMax - MapXMin, MapYMax - MapYMin), grass, -10);
+        else
+            CreateQuad(root, "Ground", Vector2.zero,
+                new Vector2(MapXMax - MapXMin, MapYMax - MapYMin), ground, white, -10, false);
 
         // Muros externos (Limite do Campus).
         float mw = MapXMax - MapXMin + WallT;
@@ -342,14 +360,15 @@ public static class TopDownSceneBuilder
         CreateQuad(root, "Path_Blocos_V", new Vector2(2f, -2f), new Vector2(4f, 28f), path, white, -9, false);
         CreateQuad(root, "Path_009", new Vector2(2f, -24f), new Vector2(4f, 16f), path, white, -9, false);
 
-        var roofDidatico = new Color(0.30f, 0.42f, 0.60f);  // telhado dos blocos (azul)
         var roofServico = new Color(0.42f, 0.48f, 0.30f);   // telhado serviço (verde)
 
         // 006 — Guarita (entrada) — prédio pequeno coberto, sem interior.
         CoveredBlock(root, "GUARITA (006)", new Vector2(-6f, 22f), new Vector2(5f, 4f), roofServico, 'S', false);
 
-        // 007 — Bloco Administrativo / RU (esquerda, largo) — coberto, com sala (interior).
-        CoveredBlock(root, "RU / ADM (007)", new Vector2(-22f, 2f), new Vector2(16f, 9f), roofServico, 'E', true);
+        // 007 — RU: exterior (lateral) no campus; entrar faz TRANSIÇÃO de tela para
+        // o refeitório (ru_pixel), onde está o Natan.
+        BuildRUBuilding(root, "RU (007)", new Vector2(-22f, 2f), 22f,
+            RUExtPath, new Vector4(0.022f, 0.301f, 0.977f, 0.627f), 0.506f, 0.627f);
 
         // 005 — Convivência (entre o RU e os blocos) — aberta (spawn), piso em peça única.
         Sprite floorS = CampusAssets.Get("floor");
@@ -357,15 +376,139 @@ public static class TopDownSceneBuilder
         else CreateQuad(root, "Floor_Convivencia", new Vector2(-8f, 2f), new Vector2(8f, 8f), new Color(0.22f, 0.32f, 0.20f), white, -8, false);
         Label(root, "CONVIVENCIA (005)", new Vector2(-8f, 6.6f), new Color(0.9f, 1f, 0.9f));
 
-        // 001–004 — Blocos didáticos (2x2) cobertos; cada um tem uma SALA por dentro.
-        CoveredBlock(root, "BLOCO 1 (001)", PosBloco1, new Vector2(7f, 16f), roofDidatico, 'W', true);
-        CoveredBlock(root, "BLOCO 2 (002)", new Vector2(13f, 10f), new Vector2(7f, 16f), roofDidatico, 'W', true);
-        CoveredBlock(root, "BLOCO 3 (003)", PosPortal, new Vector2(7f, 16f), roofDidatico, 'W', true);
-        CoveredBlock(root, "BLOCO 4 (004)", new Vector2(13f, -14f), new Vector2(7f, 16f), roofDidatico, 'W', true);
+        // 001–004 — Blocos didáticos: exterior (perspectiva) no campus; entrar faz
+        // TRANSIÇÃO para o interior top-down (bloco_pixel) com as 3 salas.
+        BuildBlocoBuilding(root, "BLOCO 1 (001)", PosBloco1, 12f,
+            Bloco1ExtPath, new Vector4(0.225f, 0.098f, 0.774f, 0.878f), 0.504f, 0.878f);
+        BuildBlocoBuilding(root, "BLOCO 2 (002)", new Vector2(13f, 10f), 12f,
+            Bloco2ExtPath, new Vector4(0.283f, 0.185f, 0.713f, 0.796f), 0.505f, 0.796f);
+        BuildBlocoBuilding(root, "BLOCO 3 (003)", PosPortal, 12f,
+            Bloco34ExtPath, new Vector4(0.283f, 0.184f, 0.714f, 0.796f), 0.503f, 0.796f);
+        BuildBlocoBuilding(root, "BLOCO 4 (004)", new Vector2(13f, -14f), 12f,
+            Bloco34ExtPath, new Vector4(0.283f, 0.184f, 0.714f, 0.796f), 0.503f, 0.796f);
 
         // 008 / 009 — Depósitos (fechados, sem interior).
         CoveredBlock(root, "DEP. (008)", new Vector2(-24f, -10f), new Vector2(6f, 3f), roofServico, 'X', false);
         CoveredBlock(root, "DEP. (009)", new Vector2(2f, -32f), new Vector2(7f, 3f), roofServico, 'X', false);
+
+        // Vegetação preenchendo o gramado (clusters, longe de prédios/caminhos).
+        ScatterFoliage(root);
+    }
+
+    /// <summary>
+    /// Espalha árvores/arbustos em CLUSTERS pelo gramado, com posição/escala
+    /// aleatórias, evitando prédios, caminhos e a faixa norte (avenida/estac.).
+    /// Puramente decorativo (sem colisão) — o jogador atravessa.
+    /// </summary>
+    private static void ScatterFoliage(Transform root)
+    {
+        Sprite tree = GetEnvSprite(TreePath, 32f, repeat: false);
+        Sprite bush = GetEnvSprite(BushPath, 32f, repeat: false);
+        if (tree == null && bush == null) return;
+
+        var group = new GameObject("Foliage").transform;
+        group.SetParent(root, false);
+
+        // Áreas proibidas: (x, y, meia-largura, meia-altura) já com margem.
+        var blocked = new List<Vector4>();
+        void Block(float x, float y, float w, float h, float m)
+            => blocked.Add(new Vector4(x, y, w / 2f + m, h / 2f + m));
+        // Footprints dos exteriores em perspectiva (base ao sul).
+        Block(2, 10, 7, 11, 1.5f); Block(13, 10, 6, 9, 1.5f);
+        Block(2, -14, 6, 9, 1.5f); Block(13, -14, 6, 9, 1.5f);
+        Block(-22, 2.8f, 18, 9, 1.5f); Block(-6, 22, 5, 4, 1.5f);
+        Block(-24, -10, 6, 3, 1.5f); Block(2, -32, 7, 3, 1.5f);
+        Block(-8, 2, 8, 8, 1.5f);                       // Convivência / spawn
+        Block(2, 2, 26, 4, 1f); Block(2, -2, 4, 28, 1f); // caminhos
+        Block(2, -24, 4, 16, 1f); Block(-6, 15, 4, 14, 1f);
+        Block(-6, -6, 3, 3, 2f);                        // portal da prova
+
+        bool Free(float x, float y)
+        {
+            if (y > 24f) return false; // avenida/estacionamento livres
+            foreach (var b in blocked)
+                if (Mathf.Abs(x - b.x) < b.z && Mathf.Abs(y - b.y) < b.w) return false;
+            return true;
+        }
+
+        Random.InitState(20260701);
+        const int clusters = 95;
+        for (int i = 0; i < clusters; i++)
+        {
+            float cx = Random.Range(MapXMin + 2f, MapXMax - 2f);
+            float cy = Random.Range(MapYMin + 2f, 24f);
+            if (!Free(cx, cy)) continue;
+
+            if (tree != null && Random.value < 0.7f)
+                PlaceFoliage(group, "Tree", tree, cx, cy, Random.Range(0.85f, 1.3f));
+
+            int nb = Random.Range(2, 5);
+            for (int k = 0; k < nb && bush != null; k++)
+            {
+                float bx = cx + Random.Range(-3f, 3f);
+                float by = cy + Random.Range(-3f, 3f);
+                if (Free(bx, by))
+                    PlaceFoliage(group, "Bush", bush, bx, by, Random.Range(0.7f, 1.15f));
+            }
+        }
+    }
+
+    private static void PlaceFoliage(Transform parent, string name, Sprite sprite,
+        float x, float y, float scale)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = new Vector3(x, y, 0f);
+        go.transform.localScale = new Vector3(scale, scale, 1f);
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.sortingOrder = -2; // acima do chão/caminhos, abaixo dos prédios e do jogador
+    }
+
+    /// <summary>Sprite renderizado em modo Tiled (repete a arte para preencher a área).</summary>
+    private static GameObject TiledSprite(Transform parent, string name, Vector2 center,
+        Vector2 worldSize, Sprite sprite, int sortingOrder)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = center;
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.drawMode = SpriteDrawMode.Tiled;
+        sr.tileMode = SpriteTileMode.Continuous;
+        sr.size = worldSize;
+        sr.sortingOrder = sortingOrder;
+        return go;
+    }
+
+    /// <summary>Importa (se preciso) e retorna um sprite de Assets/Art/Env.</summary>
+    private static Sprite GetEnvSprite(string path, float ppu, bool repeat)
+    {
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+        {
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) { Debug.LogWarning($"[Calouro] Não achei {path}."); return null; }
+        }
+
+        bool changed = false;
+        if (importer.textureType != TextureImporterType.Sprite) { importer.textureType = TextureImporterType.Sprite; changed = true; }
+        if (importer.spriteImportMode != SpriteImportMode.Single) { importer.spriteImportMode = SpriteImportMode.Single; changed = true; }
+        if (!Mathf.Approximately(importer.spritePixelsPerUnit, ppu)) { importer.spritePixelsPerUnit = ppu; changed = true; }
+        var wm = repeat ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
+        if (importer.wrapMode != wm) { importer.wrapMode = wm; changed = true; }
+        // Pixel-art nítido: Point (sem bilinear), sem mipmaps, sem compressão.
+        if (importer.filterMode != FilterMode.Point) { importer.filterMode = FilterMode.Point; changed = true; }
+        if (importer.mipmapEnabled) { importer.mipmapEnabled = false; changed = true; }
+        if (importer.textureCompression != TextureImporterCompression.Uncompressed) { importer.textureCompression = TextureImporterCompression.Uncompressed; changed = true; }
+
+        var st = new TextureImporterSettings();
+        importer.ReadTextureSettings(st);
+        if (st.spriteMeshType != SpriteMeshType.FullRect) { st.spriteMeshType = SpriteMeshType.FullRect; importer.SetTextureSettings(st); changed = true; }
+
+        if (changed) importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
     private static void VWall(Transform parent, string name, float x, float yMin, float yMax,
@@ -459,6 +602,251 @@ public static class TopDownSceneBuilder
         return frontPos;
     }
 
+    private static void EnsureInteriorsRoot()
+    {
+        if (interiorsRoot != null) return;
+        var go = GameObject.Find("Interiors");
+        if (go != null) Object.DestroyImmediate(go);
+        interiorsRoot = new GameObject("Interiors").transform;
+    }
+
+    /// <summary>Bloco: exterior no campus + interior por transição de tela.</summary>
+    private static void BuildBlocoBuilding(Transform root, string label, Vector2 center, float canvasH,
+        string extPath, Vector4 content, float doorNormX, float doorBottomNormY)
+    {
+        var (spawn, bmin, bmax) = BuildBlocoInterior(label);
+        BuildExterior(root, label, center, canvasH, extPath, content, doorNormX, doorBottomNormY, spawn, bmin, bmax);
+    }
+
+    /// <summary>RU: exterior (lateral) no campus + refeitório por transição de tela.</summary>
+    private static void BuildRUBuilding(Transform root, string label, Vector2 center, float canvasH,
+        string extPath, Vector4 content, float doorNormX, float doorBottomNormY)
+    {
+        var (spawn, bmin, bmax) = BuildRUInterior(label);
+        BuildExterior(root, label, center, canvasH, extPath, content, doorNormX, doorBottomNormY, spawn, bmin, bmax);
+    }
+
+    /// <summary>
+    /// Desenha um prédio em PERSPECTIVA no campus (arte 1122x1402), com colisão
+    /// sólida sobre o corpo e um gatilho de porta (E) na base que faz a TRANSIÇÃO
+    /// de tela para o interior (spawn/limites vindos do montador do interior).
+    /// content = (nx0, ny0, nx1, ny1) do conteúdo visível dentro do canvas.
+    /// </summary>
+    private static void BuildExterior(Transform root, string label, Vector2 center, float canvasH,
+        string extPath, Vector4 content, float doorNormX, float doorBottomNormY,
+        Vector3 spawn, Vector2 bmin, Vector2 bmax)
+    {
+        float canvasW = canvasH * 0.8f; // artes externas são 1122x1402 (0.8)
+        Vector2 size = new Vector2(canvasW, canvasH);
+
+        Sprite art = GetEnvSprite(extPath, 100f, repeat: false);
+        if (art != null)
+            StretchedSprite(root, "Ext_" + label, center, size, art, 3, Color.white);
+        else
+            CreateQuad(root, "Ext_" + label, center, size, new Color(0.5f, 0.6f, 0.4f), s_white, 3, false);
+
+        // Retângulo do conteúdo visível no mundo (canvas: y cresce pra baixo).
+        float cl = center.x + (content.x - 0.5f) * canvasW;
+        float cr = center.x + (content.z - 0.5f) * canvasW;
+        float ctop = center.y + (0.5f - content.y) * canvasH;
+        float cbot = center.y + (0.5f - content.w) * canvasH;
+
+        // Colisão sólida sobre o corpo do prédio.
+        CreateQuad(root, "ExtCol_" + label, new Vector2((cl + cr) / 2f, (ctop + cbot) / 2f),
+            new Vector2(cr - cl, ctop - cbot), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+
+        // Gatilho da porta, logo à frente (ao sul) da base do prédio.
+        float doorX = center.x + (doorNormX - 0.5f) * canvasW;
+        float doorGY = center.y + (0.5f - doorBottomNormY) * canvasH;
+        var trig = new GameObject("Door_" + label);
+        trig.transform.SetParent(root, false);
+        trig.transform.position = new Vector3(doorX, doorGY - 0.9f, 0f);
+        var box = trig.AddComponent<BoxCollider2D>();
+        box.isTrigger = true;
+        box.size = new Vector2(2.6f, 2.2f);
+        var bd = trig.AddComponent<BuildingDoor>();
+        bd.roomSpawn = spawn;
+        bd.returnPosition = new Vector3(doorX, doorGY - 2.6f, 0f); // ao sul do gatilho (não re-entra)
+        bd.roomBoundsMin = bmin;
+        bd.roomBoundsMax = bmax;
+        bd.roomLabel = label;
+
+        Label(root, label, new Vector2(center.x, ctop + 0.8f), new Color(0.96f, 0.96f, 0.88f));
+    }
+
+    /// <summary>
+    /// Monta o INTERIOR de um bloco (arte top-down bloco_pixel) numa região afastada.
+    /// Corredor central caminhável, vasos com colisão, 3 portas do lado direito que
+    /// levam a salas de aula, e um tapete de saída (RoomExit) que volta ao campus.
+    /// Retorna (spawn, limite mín, limite máx) da câmera para o EnterRoom.
+    /// </summary>
+    private static (Vector3, Vector2, Vector2) BuildBlocoInterior(string label)
+    {
+        EnsureInteriorsRoot();
+        Vector2 c = new Vector2(400f + interiorBldgCounter * 70f, -600f);
+        interiorBldgCounter++;
+
+        Vector2 size = new Vector2(18f, 27f);
+        float hx = size.x / 2f, hy = size.y / 2f;
+        float top = c.y + hy, bottom = c.y - hy;
+        float leftEdge = c.x - hx, rightEdge = c.x + hx;
+        Color clear = new Color(0f, 0f, 0f, 0f);
+
+        Sprite art = GetBlocoSprite();
+        if (art != null)
+            StretchedSprite(interiorsRoot, "Corredor_" + label, c, size, art, -10, Color.white);
+        else
+            CreateQuad(interiorsRoot, "Corredor_" + label, c, size, new Color(0.3f, 0.3f, 0.32f), s_white, -10, false);
+
+        float corridorLeft = c.x - 0.20f * size.x;
+        float corridorRight = c.x + 0.20f * size.x;
+        // Laterais sólidas.
+        CreateQuad(interiorsRoot, "CkL_" + label, new Vector2((leftEdge + corridorLeft) / 2f, c.y),
+            new Vector2(corridorLeft - leftEdge, size.y), clear, s_white, 0, true);
+        CreateQuad(interiorsRoot, "CkR_" + label, new Vector2((corridorRight + rightEdge) / 2f, c.y),
+            new Vector2(rightEdge - corridorRight, size.y), clear, s_white, 0, true);
+        // Topo fechado.
+        CreateQuad(interiorsRoot, "CkT_" + label, new Vector2(c.x, top - 0.3f),
+            new Vector2(corridorRight - corridorLeft, 0.6f), clear, s_white, 0, true);
+        // Base com vão central (entrada/saída) e tapete de saída.
+        float gapHalf = 0.085f * size.x;
+        float gapL = c.x - gapHalf, gapR = c.x + gapHalf;
+        CreateQuad(interiorsRoot, "CkBotL_" + label, new Vector2((corridorLeft + gapL) / 2f, bottom + 0.3f),
+            new Vector2(gapL - corridorLeft, 0.6f), clear, s_white, 0, true);
+        CreateQuad(interiorsRoot, "CkBotR_" + label, new Vector2((gapR + corridorRight) / 2f, bottom + 0.3f),
+            new Vector2(corridorRight - gapR, 0.6f), clear, s_white, 0, true);
+        var mat = CreateQuad(interiorsRoot, "CExit_" + label, new Vector2(c.x, bottom + 1.1f),
+            new Vector2(gapHalf * 1.8f, 1.0f), new Color(0.3f, 1f, 0.4f, 0.3f), s_white, -9, false);
+        var mcol = mat.AddComponent<BoxCollider2D>();
+        mcol.isTrigger = true;
+        mat.AddComponent<RoomExit>();
+
+        // Vasos (colisão): 2 colunas × 3 fileiras.
+        var pots = new[]
+        {
+            new Vector2(0.337f, 0.086f), new Vector2(0.652f, 0.086f),
+            new Vector2(0.337f, 0.372f), new Vector2(0.652f, 0.372f),
+            new Vector2(0.337f, 0.671f), new Vector2(0.652f, 0.671f),
+        };
+        for (int p = 0; p < pots.Length; p++)
+        {
+            float px = leftEdge + pots[p].x * size.x;
+            float py = top - pots[p].y * size.y;
+            CreateQuad(interiorsRoot, $"Vaso_{label}_{p}", new Vector2(px, py),
+                new Vector2(0.6f, 0.45f), clear, s_white, 0, true);
+        }
+
+        // 3 portas do lado direito → salas de aula.
+        float[] dy = { 0.307f, 0.0185f, -0.326f };
+        for (int i = 0; i < dy.Length; i++)
+        {
+            float doorY = c.y + dy[i] * size.y;
+            string salaLabel = label + " — Sala " + (i + 1);
+            var (sspawn, sbmin, sbmax) = BuildInteriorRoom(salaLabel);
+
+            var trig = new GameObject("SalaDoor_" + salaLabel);
+            trig.transform.SetParent(interiorsRoot, false);
+            trig.transform.position = new Vector3(c.x + 0.145f * size.x, doorY, 0f);
+            var box = trig.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(1.6f, 1.8f);
+            var bd = trig.AddComponent<BuildingDoor>();
+            bd.roomSpawn = sspawn;
+            bd.returnPosition = new Vector3(c.x + 0.05f * size.x, doorY, 0f);
+            bd.roomBoundsMin = sbmin;
+            bd.roomBoundsMax = sbmax;
+            bd.roomLabel = salaLabel;
+        }
+
+        Label(interiorsRoot, "CORREDOR — " + label, new Vector2(c.x, top + 1.0f), new Color(0.96f, 0.96f, 0.88f));
+        Vector3 spawn = new Vector3(c.x, bottom + 3.0f, 0f);
+        return (spawn, new Vector2(leftEdge, bottom), new Vector2(rightEdge, top));
+    }
+
+    /// <summary>
+    /// Monta o INTERIOR do RU (arte top-down ru_pixel) numa região afastada. Salão
+    /// central caminhável (entre norm 0.242 e 0.708), laterais sólidas, tapete de
+    /// saída (RoomExit) na base e o Natan dentro. Retorna (spawn, mín, máx).
+    /// </summary>
+    private static (Vector3, Vector2, Vector2) BuildRUInterior(string label)
+    {
+        EnsureInteriorsRoot();
+        Vector2 c = new Vector2(400f + interiorBldgCounter * 70f, -600f);
+        interiorBldgCounter++;
+
+        Vector2 size = new Vector2(18f, 27f);
+        float hx = size.x / 2f, hy = size.y / 2f;
+        float top = c.y + hy, bottom = c.y - hy;
+        float leftEdge = c.x - hx, rightEdge = c.x + hx;
+        Color clear = new Color(0f, 0f, 0f, 0f);
+
+        Sprite art = GetEnvSprite(RUInteriorPath, 100f, repeat: false);
+        if (art != null)
+            StretchedSprite(interiorsRoot, "Refeitorio_" + label, c, size, art, -10, Color.white);
+        else
+            CreateQuad(interiorsRoot, "Refeitorio_" + label, c, size, new Color(0.4f, 0.42f, 0.44f), s_white, -10, false);
+
+        float hallLeft = leftEdge + 0.242f * size.x;
+        float hallRight = leftEdge + 0.708f * size.x;
+        // Laterais sólidas.
+        CreateQuad(interiorsRoot, "RkL_" + label, new Vector2((leftEdge + hallLeft) / 2f, c.y),
+            new Vector2(hallLeft - leftEdge, size.y), clear, s_white, 0, true);
+        CreateQuad(interiorsRoot, "RkR_" + label, new Vector2((hallRight + rightEdge) / 2f, c.y),
+            new Vector2(rightEdge - hallRight, size.y), clear, s_white, 0, true);
+        // Topo fechado.
+        CreateQuad(interiorsRoot, "RkT_" + label, new Vector2((hallLeft + hallRight) / 2f, top - 0.3f),
+            new Vector2(hallRight - hallLeft, 0.6f), clear, s_white, 0, true);
+        // Base: cantos sólidos + vão central + tapete de saída.
+        float gL = leftEdge + 0.294f * size.x;
+        float gR = leftEdge + 0.670f * size.x;
+        CreateQuad(interiorsRoot, "RkBotL_" + label, new Vector2((hallLeft + gL) / 2f, bottom + 0.3f),
+            new Vector2(gL - hallLeft, 0.6f), clear, s_white, 0, true);
+        CreateQuad(interiorsRoot, "RkBotR_" + label, new Vector2((gR + hallRight) / 2f, bottom + 0.3f),
+            new Vector2(hallRight - gR, 0.6f), clear, s_white, 0, true);
+        var mat = CreateQuad(interiorsRoot, "RExit_" + label, new Vector2((gL + gR) / 2f, bottom + 1.1f),
+            new Vector2((gR - gL) * 0.9f, 1.0f), new Color(0.3f, 1f, 0.4f, 0.3f), s_white, -9, false);
+        var mcol = mat.AddComponent<BoxCollider2D>();
+        mcol.isTrigger = true;
+        mat.AddComponent<RoomExit>();
+
+        // Natan no salão, um pouco à frente da entrada.
+        CreateNpc(interiorsRoot, "NPC_Natan", CharsFolder + "/natan.png",
+            new Vector2((gL + gR) / 2f, bottom + 5.0f), "Natan", "natan",
+            new[]
+            {
+                "E aí, calouro! Eu sou o Natan.",
+                "Bora sobreviver a esse primeiro semestre juntos.",
+                "Precisa de algo? É só me chamar.",
+            });
+
+        Label(interiorsRoot, "REFEITÓRIO — " + label, new Vector2(c.x, top + 1.0f), new Color(0.96f, 0.96f, 0.88f));
+        Vector3 spawn = new Vector3((gL + gR) / 2f, bottom + 3.0f, 0f);
+        return (spawn, new Vector2(leftEdge, bottom), new Vector2(rightEdge, top));
+    }
+
+    /// <summary>Garante que a arte do bloco está importada como Sprite e a retorna.</summary>
+    private static Sprite GetBlocoSprite()
+    {
+        var importer = AssetImporter.GetAtPath(BlocoInteriorPath) as TextureImporter;
+        if (importer == null)
+        {
+            AssetDatabase.ImportAsset(BlocoInteriorPath, ImportAssetOptions.ForceSynchronousImport);
+            importer = AssetImporter.GetAtPath(BlocoInteriorPath) as TextureImporter;
+            if (importer == null) { Debug.LogWarning($"[Calouro] Não achei {BlocoInteriorPath}."); return null; }
+        }
+
+        bool changed = false;
+        if (importer.textureType != TextureImporterType.Sprite) { importer.textureType = TextureImporterType.Sprite; changed = true; }
+        if (importer.spriteImportMode != SpriteImportMode.Single) { importer.spriteImportMode = SpriteImportMode.Single; changed = true; }
+        // Pixel-art nítido.
+        if (importer.filterMode != FilterMode.Point) { importer.filterMode = FilterMode.Point; changed = true; }
+        if (importer.mipmapEnabled) { importer.mipmapEnabled = false; changed = true; }
+        if (importer.textureCompression != TextureImporterCompression.Uncompressed) { importer.textureCompression = TextureImporterCompression.Uncompressed; changed = true; }
+        if (changed) importer.SaveAndReimport();
+
+        return AssetDatabase.LoadAssetAtPath<Sprite>(BlocoInteriorPath);
+    }
+
     /// <summary>
     /// Monta uma SALA numa região afastada (interiores ficam lado a lado, longe
     /// do campus). Piso em peça única, paredes contínuas (esticadas, eixos certos),
@@ -467,12 +855,7 @@ public static class TopDownSceneBuilder
     /// </summary>
     private static (Vector3 spawn, Vector2 bmin, Vector2 bmax) BuildInteriorRoom(string label)
     {
-        if (interiorsRoot == null)
-        {
-            var go = GameObject.Find("Interiors");
-            if (go != null) Object.DestroyImmediate(go);
-            interiorsRoot = new GameObject("Interiors").transform;
-        }
+        EnsureInteriorsRoot();
 
         // Salas enfileiradas bem longe do campus (evita sobrepor campus e labirinto).
         Vector2 c = new Vector2(300f + roomCounter * 40f, -300f);
@@ -600,14 +983,7 @@ public static class TopDownSceneBuilder
         if (old != null) Object.DestroyImmediate(old);
         var root = new GameObject("NPCs");
 
-        CreateNpc(root.transform, "NPC_Natan", CharsFolder + "/natan.png", PosNatan, "Natan", "natan",
-            new[]
-            {
-                "E aí, calouro! Eu sou o Natan.",
-                "Bora sobreviver a esse primeiro semestre juntos.",
-                "Precisa de algo? É só me chamar.",
-            });
-
+        // Natan agora fica DENTRO do RU (criado em BuildRUInterior).
         CreateNpc(root.transform, "NPC_Coordenador", CharsFolder + "/jeferson.png", PosCoordenador, "Coordenador", "coordenador",
             new[]
             {

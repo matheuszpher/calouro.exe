@@ -1,47 +1,56 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Gerencia a troca de tela para os interiores dos prédios. As salas ficam numa
-/// região afastada da cena (como o labirinto). Ao entrar, teleporta o jogador
-/// para dentro da sala e ajusta os limites da câmera; ao sair, volta ao campus.
+/// Gerencia a troca de tela para os interiores (corredores dos blocos e salas).
+/// Os interiores ficam numa região afastada da cena (como o labirinto). Suporta
+/// aninhamento: campus → corredor do bloco → sala. Cada EnterRoom empilha o estado
+/// atual (limites da câmera + posição de retorno); ExitRoom desempilha e volta um
+/// nível. Assim sair da sala volta ao corredor, e sair do corredor volta ao campus.
 /// </summary>
 public class InteriorController : MonoBehaviour
 {
     public static InteriorController Instance { get; private set; }
-    public static bool InRoom { get; private set; }
+    public static bool InRoom => Instance != null && Instance.stack.Count > 0;
 
     private GameObject player;
     private CameraFollow2D cam;
-    private Vector3 returnPos;
-    private Vector2 campusMin, campusMax;
-    private bool capturedCampus;
+
+    private struct LocState
+    {
+        public bool useBounds;
+        public Vector2 boundsMin, boundsMax;
+        public Vector3 returnPos;
+    }
+    private readonly Stack<LocState> stack = new Stack<LocState>();
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        InRoom = false;
+        stack.Clear();
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) { Instance = null; InRoom = false; }
+        if (Instance == this) { Instance = null; stack.Clear(); }
     }
 
     public void EnterRoom(Vector3 spawn, Vector3 returnTo, Vector2 boundsMin, Vector2 boundsMax)
     {
-        if (InRoom || MazeController.InMaze) return;
+        if (MazeController.InMaze) return;
         EnsureRefs();
 
-        if (cam != null && !capturedCampus)
+        // Guarda de onde viemos (câmera + retorno) para restaurar ao sair.
+        var prev = new LocState { returnPos = returnTo };
+        if (cam != null)
         {
-            campusMin = cam.boundsMin;
-            campusMax = cam.boundsMax;
-            capturedCampus = true;
+            prev.useBounds = cam.useBounds;
+            prev.boundsMin = cam.boundsMin;
+            prev.boundsMax = cam.boundsMax;
         }
+        stack.Push(prev);
 
-        returnPos = returnTo;
-        InRoom = true;
         if (cam != null)
         {
             cam.boundsMin = boundsMin;
@@ -53,19 +62,20 @@ public class InteriorController : MonoBehaviour
 
     public void ExitRoom()
     {
-        if (!InRoom) return;
-        InRoom = false;
-        if (cam != null && capturedCampus)
+        if (stack.Count == 0) return;
+        var s = stack.Pop();
+        if (cam != null)
         {
-            cam.boundsMin = campusMin;
-            cam.boundsMax = campusMax;
-            cam.useBounds = true;
+            cam.boundsMin = s.boundsMin;
+            cam.boundsMax = s.boundsMax;
+            cam.useBounds = s.useBounds;
         }
-        Teleport(returnPos);
+        Teleport(s.returnPos);
     }
 
     private void Teleport(Vector3 pos)
     {
+        if (player == null) EnsureRefs();
         if (player == null) return;
         var rb = player.GetComponent<Rigidbody2D>();
         if (rb != null) rb.linearVelocity = Vector2.zero;
