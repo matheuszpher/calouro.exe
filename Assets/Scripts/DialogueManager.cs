@@ -26,6 +26,14 @@ public class DialogueManager : MonoBehaviour
     private bool choosing;
     private System.Action<int> choiceCallback;
 
+    // NPC que está "olhando" para o jogador durante a fala atual (pausado, se andava).
+    private NpcInteractable facingNpc;
+
+    // Frame em que a fala atual foi aberta — evita que o mesmo toque de E que ABRE
+    // uma fala (ex.: o "pensamento" de sala errada, aberto fora do fluxo normal de
+    // Update) seja lido de novo aqui embaixo e feche tudo no mesmo frame.
+    private int openedFrame = -1;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -62,11 +70,14 @@ public class DialogueManager : MonoBehaviour
 
         if (IsActive)
         {
-            if (pressed) Advance();
+            // Ignora o toque de E do próprio frame em que a fala foi aberta por
+            // fora (ex.: BuildingDoor mostrando um pensamento) — senão fecha na hora.
+            if (pressed && Time.frameCount != openedFrame) Advance();
         }
         else if (nearby != null && pressed)
         {
             activeNpc = nearby;
+            SetNpcFacingPlayer(nearby);
             StartDialogue(nearby.npcName, nearby.lines);
         }
     }
@@ -93,6 +104,7 @@ public class DialogueManager : MonoBehaviour
         lines = content;
         index = 0;
         IsActive = true;
+        openedFrame = Time.frameCount;
         HideHint();
         ShowPanel();
         Render();
@@ -119,10 +131,60 @@ public class DialogueManager : MonoBehaviour
         if (npc != null && QuestManager.Instance != null)
             QuestManager.Instance.OnTalked(npc.npcId);
 
-        // Se a quest não abriu uma escolha/continuação, volta a mostrar a dica.
+        // NPCs de ambiente podem ter uma escolha simples (flavor, sem flag/efeito)
+        // configurada neles mesmos, independente da quest principal.
+        if (npc != null && npc.hasChoice && !IsActive && !choosing)
+        {
+            StartChoice(npc.npcName, npc.choiceQuestion, npc.choiceOptionA, npc.choiceOptionB, choice =>
+            {
+                // Vitim aceitando o pingue-pongue leva pro minigame em vez de só
+                // uma resposta de flavor (ver VitimPingPongTrigger).
+                if (npc.npcId == "vitim" && choice == 0)
+                {
+                    var starter = npc.GetComponent<VitimPingPongTrigger>();
+                    if (starter != null)
+                    {
+                        starter.BeginMatch();
+                        return;
+                    }
+                }
+                string reply = choice == 0 ? npc.choiceReplyA : npc.choiceReplyB;
+                ShowFlavorReply(npc.npcName, reply);
+            });
+        }
+
+        // Só retoma o NPC (volta a andar) se nada ficou pendente — nem escolha da
+        // quest principal (Natan), nem escolha/resposta de ambiente.
+        if (!IsActive && !choosing)
+            ResumeFacingNpc();
+
+        // Se nada abriu uma escolha/continuação, volta a mostrar a dica.
         if (!IsActive && !choosing && nearby != null)
             ShowHint($"Aperte E para falar com {nearby.npcName}");
     }
+
+    /// <summary>
+    /// Última fala de uma escolha de ambiente (não reabre quest nem escolha ao
+    /// terminar — activeNpc fica null de propósito).
+    /// </summary>
+    private void ShowFlavorReply(string who, string line)
+    {
+        speaker = who;
+        lines = new[] { line };
+        index = 0;
+        IsActive = true;
+        openedFrame = Time.frameCount;
+        activeNpc = null;
+        HideHint();
+        ShowPanel();
+        Render();
+    }
+
+    /// <summary>
+    /// "Pensamento" do próprio jogador (ex.: sala errada) — mesma caixa de
+    /// diálogo, sem NPC nenhum envolvido.
+    /// </summary>
+    public void ShowThought(string text) => ShowFlavorReply("(pensando)", text);
 
     /// <summary>Mostra uma pergunta com duas opções (responder com 1 ou 2).</summary>
     public void StartChoice(string who, string question, string optionA, string optionB, System.Action<int> onChosen)
@@ -130,10 +192,42 @@ public class DialogueManager : MonoBehaviour
         choiceCallback = onChosen;
         choosing = true;
         IsActive = true;
+        openedFrame = Time.frameCount;
         HideHint();
         ShowPanel();
         if (nameText != null) nameText.text = who;
         if (bodyText != null) bodyText.text = $"{question}\n\n[1] {optionA}\n[2] {optionB}";
+    }
+
+    /// <summary>
+    /// Faz o NPC virar de frente pra direção real de onde o jogador está (cima,
+    /// baixo ou lado — usa o mesmo cálculo de direção dominante da caminhada) e
+    /// trava a pose enquanto a fala durar. Funciona pra qualquer NPC — todos têm
+    /// SpriteWalkAnimator (ver CreateNpc), então isso é global, sem configurar
+    /// nada por NPC. NpcPatrol já se pausa sozinho enquanto DialogueManager.IsActive.
+    /// </summary>
+    private void SetNpcFacingPlayer(NpcInteractable npc)
+    {
+        if (npc == null) return;
+        facingNpc = npc;
+
+        var anim = npc.GetComponent<SpriteWalkAnimator>();
+        if (anim == null) return;
+
+        var player = GameObject.FindWithTag("Player");
+        Vector2 toward = player != null
+            ? (Vector2)(player.transform.position - npc.transform.position)
+            : Vector2.zero;
+        anim.LockFacing(toward);
+    }
+
+    /// <summary>Desfaz SetNpcFacingPlayer — o NPC volta a andar/animar normalmente.</summary>
+    private void ResumeFacingNpc()
+    {
+        if (facingNpc == null) return;
+        var anim = facingNpc.GetComponent<SpriteWalkAnimator>();
+        if (anim != null) anim.UnlockFacing();
+        facingNpc = null;
     }
 
     private void Choose(int index)
@@ -144,6 +238,11 @@ public class DialogueManager : MonoBehaviour
         var cb = choiceCallback;
         choiceCallback = null;
         cb?.Invoke(index);
+
+        // Se o callback não encadeou outra fala (ex.: ShowFlavorReply), acabou de
+        // vez — o NPC que tava olhando pro jogador volta a andar.
+        if (!IsActive && !choosing)
+            ResumeFacingNpc();
     }
 
     private void Render()

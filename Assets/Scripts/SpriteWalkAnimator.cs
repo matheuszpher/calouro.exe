@@ -6,6 +6,9 @@ using UnityEngine;
 /// parecer que está andando. Ao parar, mantém a pose "idle" da última direção.
 /// O lado esquerdo é o direito espelhado (flipX). Diagonais usam a direção
 /// dominante (mais horizontal = lado).
+/// Funciona tanto com Rigidbody2D (Player, lê linearVelocity) quanto sem — nesse
+/// caso estima a velocidade pela variação de transform.position (NPCs com
+/// NpcPatrol, que só movem o transform direto, sem física).
 /// </summary>
 public class SpriteWalkAnimator : MonoBehaviour
 {
@@ -35,23 +38,70 @@ public class SpriteWalkAnimator : MonoBehaviour
 
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
+    private Vector3 lastPos;
     private float timer;
     private int step;
     private Dir dir = Dir.Down;
     private bool faceRight;
+    private bool facingLocked;
 
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        lastPos = transform.position;
     }
+
+    /// <summary>
+    /// Trava numa pose parada olhando na direção de towardTarget (ex.: do NPC pro
+    /// jogador) até UnlockFacing() ser chamado. Usado pelo DialogueManager ao
+    /// iniciar uma fala, pra virar o NPC de frente pra quem tá falando com ele.
+    /// </summary>
+    public void LockFacing(Vector2 towardTarget)
+    {
+        facingLocked = true;
+        if (towardTarget.sqrMagnitude > 0.0001f)
+        {
+            if (Mathf.Abs(towardTarget.x) >= Mathf.Abs(towardTarget.y))
+            {
+                dir = Dir.Side;
+                faceRight = towardTarget.x > 0f;
+            }
+            else
+            {
+                // Numa conversa o NPC nunca dá as costas pra quem tá falando com
+                // ele — diferente da caminhada (onde "pra cima" mostra as costas),
+                // aqui "jogador ao norte ou ao sul" sempre mostra a frente.
+                dir = Dir.Down;
+            }
+        }
+        timer = 0f;
+        step = 0;
+        SetFrame(IdleFor(dir));
+        ApplyFlip(false);
+    }
+
+    /// <summary>Libera o Update() normal de novo (caminhada/idle por velocidade).</summary>
+    public void UnlockFacing() => facingLocked = false;
 
     private void Update()
     {
+        if (facingLocked) return;
         if (frames == null || frames.Length == 0 || spriteRenderer == null)
             return;
 
-        Vector2 v = rb != null ? rb.linearVelocity : Vector2.zero;
+        // Com Rigidbody2D (Player) usa a velocidade física; sem ele (NPCs movidos
+        // direto pelo transform, ex.: NpcPatrol) estima pela posição do quadro anterior.
+        Vector2 v;
+        if (rb != null)
+        {
+            v = rb.linearVelocity;
+        }
+        else
+        {
+            v = Time.deltaTime > 0f ? (Vector2)(transform.position - lastPos) / Time.deltaTime : Vector2.zero;
+            lastPos = transform.position;
+        }
         bool moving = v.sqrMagnitude > 0.01f;
 
         if (moving)

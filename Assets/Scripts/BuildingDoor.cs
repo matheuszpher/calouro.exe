@@ -4,6 +4,9 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Porta de um prédio: quando o jogador chega perto e aperta E, entra na sala
 /// (troca de tela via InteriorController). Precisa de um Collider2D "Is Trigger".
+/// Se classroomId estiver preenchido (usado pelas portas de sala de aula), só
+/// entra quando bater com ClassSchedule.CurrentRoomId — caso contrário mostra um
+/// pensamento do jogador em vez de entrar (fluxo de horário real vem depois).
 /// </summary>
 public class BuildingDoor : MonoBehaviour
 {
@@ -12,6 +15,12 @@ public class BuildingDoor : MonoBehaviour
     public Vector2 roomBoundsMin;
     public Vector2 roomBoundsMax;
     public string roomLabel = "sala";
+
+    [Tooltip("Se preenchido, só abre quando igual a ClassSchedule.CurrentRoomId (salas de aula).")]
+    public string classroomId = "";
+
+    [Tooltip("Escala do jogador dentro da sala (1 = normal). Volta ao normal ao sair.")]
+    public float playerScale = 1f;
 
     private bool near;
 
@@ -31,14 +40,25 @@ public class BuildingDoor : MonoBehaviour
 
     private void Update()
     {
-        if (!near || InteriorController.InRoom || MazeController.InMaze
+        // OBS: não bloqueia mais por InteriorController.InRoom — essa checagem
+        // impedia entrar na sala a partir de dentro do corredor do bloco (que já
+        // conta como "estar numa sala" na pilha), travando a porta da sala de aula.
+        if (!near || MazeController.InMaze
             || DialogueManager.IsActive || TitleScreen.IsShowing || QuestManager.IsGameOver) return;
 
         var kb = Keyboard.current;
         if (kb != null && kb.eKey.wasPressedThisFrame)
         {
             DialogueManager.Instance?.HideActionHint();
-            InteriorController.Instance?.EnterRoom(roomSpawn, returnPosition, roomBoundsMin, roomBoundsMax);
+
+            if (!string.IsNullOrEmpty(classroomId) && classroomId != ClassSchedule.CurrentRoomId)
+            {
+                DialogueManager.Instance?.ShowThought(
+                    $"Ops, sala errada. A sala correta de hoje é: {ClassSchedule.CurrentRoomLabel}");
+                return;
+            }
+
+            InteriorController.Instance?.EnterRoom(roomSpawn, returnPosition, roomBoundsMin, roomBoundsMax, playerScale);
         }
     }
 }

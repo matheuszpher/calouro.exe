@@ -16,6 +16,14 @@ public class NpcInteractable : MonoBehaviour
     [TextArea(2, 5)]
     public string[] lines;
 
+    [Header("Escolha opcional ao fim da fala (flavor — sem efeito mecânico)")]
+    public bool hasChoice;
+    public string choiceQuestion;
+    public string choiceOptionA;
+    public string choiceOptionB;
+    [TextArea(1, 3)] public string choiceReplyA;
+    [TextArea(1, 3)] public string choiceReplyB;
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (!other.CompareTag("Player")) return;
