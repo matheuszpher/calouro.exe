@@ -21,6 +21,7 @@ public class InteriorController : MonoBehaviour
         public bool useBounds;
         public Vector2 boundsMin, boundsMax;
         public Vector3 returnPos;
+        public Vector3 playerScale;
     }
     private readonly Stack<LocState> stack = new Stack<LocState>();
 
@@ -29,19 +30,34 @@ public class InteriorController : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         stack.Clear();
+
+        // Voltando do minigame de pingue-pongue (cena separada): reabre a
+        // Convivência exatamente de onde o jogador saiu (ver PingPongSession).
+        // Não zera o flag aqui — o TitleScreen também precisa lê-lo no Start()
+        // (que roda depois de todos os Awake) pra saber que não deve se mostrar.
+        if (PingPongSession.Active)
+        {
+            EnterRoom(PingPongSession.ReturnSpawn, PingPongSession.ReturnFront,
+                PingPongSession.RoomBoundsMin, PingPongSession.RoomBoundsMax, PingPongSession.PlayerScale);
+        }
     }
+
+    /// <summary>Espia (sem tirar da pilha) o ponto de retorno do nível atual — usado
+    /// pelo handoff do minigame de pingue-pongue pra saber pra onde voltar.</summary>
+    public Vector3? PeekReturnPos() => stack.Count > 0 ? (Vector3?)stack.Peek().returnPos : null;
 
     private void OnDestroy()
     {
         if (Instance == this) { Instance = null; stack.Clear(); }
     }
 
-    public void EnterRoom(Vector3 spawn, Vector3 returnTo, Vector2 boundsMin, Vector2 boundsMax)
+    public void EnterRoom(Vector3 spawn, Vector3 returnTo, Vector2 boundsMin, Vector2 boundsMax, float playerScale = 1f)
     {
         if (MazeController.InMaze) return;
         EnsureRefs();
 
-        // Guarda de onde viemos (câmera + retorno) para restaurar ao sair.
+        // Guarda de onde viemos (câmera + retorno + escala do jogador) para
+        // restaurar ao sair.
         var prev = new LocState { returnPos = returnTo };
         if (cam != null)
         {
@@ -49,6 +65,7 @@ public class InteriorController : MonoBehaviour
             prev.boundsMin = cam.boundsMin;
             prev.boundsMax = cam.boundsMax;
         }
+        if (player != null) prev.playerScale = player.transform.localScale;
         stack.Push(prev);
 
         if (cam != null)
@@ -57,10 +74,22 @@ public class InteriorController : MonoBehaviour
             cam.boundsMax = boundsMax;
             cam.useBounds = true;
         }
+        if (player != null) player.transform.localScale = new Vector3(playerScale, playerScale, 1f);
         Teleport(spawn);
     }
 
     public void ExitRoom()
+    {
+        if (stack.Count == 0) return;
+        ExitRoomTo(stack.Peek().returnPos);
+    }
+
+    /// <summary>
+    /// Como ExitRoom(), mas teleporta para uma posição explícita em vez da posição
+    /// de retorno empilhada. Usado pelos blocos-túnel: o tapete de saída norte/sul
+    /// sempre leva para o lado norte/sul do prédio, não importa por onde se entrou.
+    /// </summary>
+    public void ExitRoomTo(Vector3 pos)
     {
         if (stack.Count == 0) return;
         var s = stack.Pop();
@@ -70,7 +99,8 @@ public class InteriorController : MonoBehaviour
             cam.boundsMax = s.boundsMax;
             cam.useBounds = s.useBounds;
         }
-        Teleport(s.returnPos);
+        if (player != null) player.transform.localScale = s.playerScale;
+        Teleport(pos);
     }
 
     private void Teleport(Vector3 pos)

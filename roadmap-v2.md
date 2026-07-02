@@ -75,15 +75,16 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 | Documentos de design | GDD e Narrativa devem ser copiados para `docs/` no repositório (tarefa 3.20) |
 
 ### Cut-list de emergência (em ordem — cortar de cima para baixo)
-1. Eventos aleatórios de exploração (coletáveis fixos ficam; a aleatoriedade sai)
-2. Referências de autenticidade opcionais (Dias, ping pong, Cedro, calourada) → 1 linha de diálogo cada ou somem
-3. Resumos narrados de IHC/Ética viram texto na própria caderneta
-4. Side Quest 2 reduzida a 1 cena de diálogo (decisão + consequência no Arco 4)
-5. Progressão de dificuldade dos minigames: 1 nível só
-6. Cutscene 3 (transição) cortada — fade simples
-7. Áudio: 1 trilha única
-8. Cena da denúncia do veterano vira escolha dentro de um diálogo existente
-9. **Nunca cortar:** os 3 finais, o trote jogável, os 2 labirintos gerando nota, a side quest do notebook, o colapso de estresse, o save/Continuar e o menu de pausa.
+1. Minigame do Vitim (pingue-pongue, 3.7B) — flavor opcional, não afeta notas/estresse/finais; se cortar, volta a ser a linha de diálogo original ("Iai, vai marcar time de fora?" sem aceitar o convite)
+2. Eventos aleatórios de exploração (coletáveis fixos ficam; a aleatoriedade sai)
+3. Referências de autenticidade opcionais (Dias, Cedro, calourada) → 1 linha de diálogo cada ou somem
+4. Resumos narrados de IHC/Ética viram texto na própria caderneta
+5. Side Quest 2 reduzida a 1 cena de diálogo (decisão + consequência no Arco 4)
+6. Progressão de dificuldade dos minigames: 1 nível só
+7. Cutscene 3 (transição) cortada — fade simples
+8. Áudio: 1 trilha única
+9. Cena da denúncia do veterano vira escolha dentro de um diálogo existente
+10. **Nunca cortar:** os 3 finais, o trote jogável, os 2 labirintos gerando nota, a side quest do notebook, o colapso de estresse, o save/Continuar e o menu de pausa.
 
 ---
 
@@ -162,6 +163,16 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 - [ ] R2/final: perseguidor mais rápido + labirinto maior
 - [ ] Se `gabriel_ajudado`: antes do debug final, diálogo do Gabriel com a dica → −10s no tempo final
 
+**3.7B Minigame 4 — Pingue-pongue com o Vitim (NOVO — expansão de escopo consciente, 01/07/2026)**
+- [ ] Ao aceitar o convite do Vitim ("Bora, to dentro!") na mesa de ping pong da Convivência, os dois bonecos andam automaticamente para lados opostos da mesa e carrega a cena `PingPongMinigame` via `SceneManager` (padrão de cena própria dos minigames)
+- [ ] Barra do jogador: só eixo vertical, W/S ou setas (Input System novo, `Keyboard.current`). Barra do Vitim: IA
+- [ ] Bola com física simples 2D (`Rigidbody2D`, reflexão nas barras e nas bordas superior/inferior)
+- [ ] Partida termina em 7 pontos **ou** vantagem de 4 (ex.: 4×0, 5×1...), o que vier primeiro
+- [ ] IA do Vitim com dificuldade equilibrada (velocidade/erro variáveis) — deve ser possível ganhar e perder, não é nem perfeita nem trivial
+- [ ] Entre um ponto e outro, fala aleatória do Vitim — pool de 10 variações ("Boa bola!", "Pra um calouro você joga bem", "Tu já jogava antes né, safado!", etc.)
+- [ ] Ao fim da partida, volta para a Convivência (posição de retorno da mesa); resultado é só flavor — **não** afeta notas, estresse ou finais
+- [ ] Ver cut-list (seção 2, item 1): se faltar tempo, é o primeiro corte — volta a ser só a linha de diálogo original
+
 **3.8 Variações do labirinto de Matemática**
 - [ ] 2 tilemaps por rodada (reduzido/padrão) ativados conforme `notebook_devolvido`
 - [ ] Labirinto final: entrada secreta ativa se `notebook_devolvido` (atalho que economiza ~20s)
@@ -190,7 +201,8 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 - [ ] Coordenador: falas de todos os marcos (variantes por faixa de nota no fim do Arco 3)
 - [ ] **Cena da denúncia (novo):** após o trote, um veterano exagera com outro calouro na convivência; escolha [A] Denunciar na Direção → `veterano_denunciado` / [B] Não se envolver
 - [ ] Falas ambientes: veterano ("bem-vindo ao caos"), aluna de IA (Bloco 5), atendente do RU (marmita 13h), PAA, rã do RU
-- [ ] Dias (faz-tudo) em 2 pontos do mapa | mesa de ping pong (1 linha) | convite da Calourada (transição Arco 1→2) | Cedro (slot especial fim do Arco 3, reset parcial de estresse)
+- [ ] Dias (faz-tudo) em 2 pontos do mapa | convite da Calourada (transição Arco 1→2) | Cedro (slot especial fim do Arco 3, reset parcial de estresse)
+- [ ] Mesa de ping pong: **promovida a minigame dedicado com o Vitim** (decisão do time em 01/07/2026, expansão de escopo consciente sobre a decisão original de "1 linha de diálogo") → ver 3.7B
 
 **3.13 Coletáveis e eventos de exploração (NOVO)**
 - [ ] Item coletável `IInteractable` genérico com tipo: **Apostila** (+0.3 na disciplina relacionada, máx. 1 por arco por disciplina), **Marmita do RU** (−5 estresse), **Dica de estudo** (bilhete com dica real de minigame)

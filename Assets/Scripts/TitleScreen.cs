@@ -31,6 +31,23 @@ public class TitleScreen : MonoBehaviour
 
     private void Start()
     {
+        // Voltando do minigame de pingue-pongue: a cena recarrega inteira, mas
+        // isso não é um novo jogo — não mostra a tela de título (ver
+        // InteriorController.Awake(), que já restaurou a Convivência antes disso
+        // rodar). Start() roda depois de todos os Awake, então é seguro consumir
+        // o flag aqui.
+        if (PingPongSession.Active)
+        {
+            PingPongSession.Active = false;
+            // O painel nasce ATIVO por padrão (BuildUI não o esconde) — só Show()
+            // e Hide() mexem nisso. Sem chamar nenhum dos dois, ele continuava
+            // visível mesmo com IsShowing falso, e sem IsShowing nada nele reagia
+            // a tecla (nem Enter, nem digitar). Esconde direto aqui, sem passar
+            // por Hide() — Hide() sobrescreveria GameProgress.PlayerName pra
+            // "Calouro" (o campo local playerName nasce vazio nesta instância).
+            if (panel != null) panel.SetActive(false);
+            return;
+        }
         Show();
     }
 
