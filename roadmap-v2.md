@@ -152,6 +152,7 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 
 **3.6 Minigame 1 — Fuga do Trote (Runner)**
 - [ ] Cena nova; scroll automático; Espaço pula, S abaixa, D acelera (mapear no Input System existente)
+  - ⚠️ **Lição do pingue-pongue (3.7B, primeira "cena nova" real do projeto):** `SceneManager.LoadScene` recarrega o `SampleScene` inteiro do zero ao voltar, o que reabre a `TitleScreen` (ela sempre se mostra no `Start()`) e perde qualquer estado que não seja `GameProgress`. Use o mesmo padrão de handoff estático (`PingPongSession.cs`) pra guardar o que precisa sobreviver à troca de cena e sinalizar "isso é um retorno, não um jogo novo" — lido no `Awake()` (restaura posição/câmera) e no `Start()` (pula a tela de título), nessa ordem.
 - [ ] Chão via `OverlapCircle`; abaixar reduz o collider
 - [ ] Veteranos como triggers → 3 capturas = pego (`SetFlag("trote_pego")`, +15 estresse, mini-cutscene cômica) | chegar ao fim = `SetFlag("trote_escapou")`
 - [ ] Escolha pré-minigame: [A] Fugir | [B] Negociar → começa com 3s de vantagem (veteranos entram atrasados)
