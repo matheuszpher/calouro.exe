@@ -297,13 +297,17 @@ public static class TopDownSceneBuilder
     private const float WallT = 0.6f;
 
     // Posições-chave (compartilhadas entre os montadores).
-    private static readonly Vector3 SpawnPos = new Vector3(-8f, 3f, 0f);   // Convivência (005)
-    private static readonly Vector2 PosCoordenador = new Vector2(-8f, 6f); // Convivência
+    // Convivência (005): SpawnPos/PosCoordenador ficam no deck/escada da arte
+    // (abaixo do prédio coberto — ver ConvCenter/ConvCanvas), não dentro dele.
+    private static readonly Vector3 SpawnPos = new Vector3(-5f, -1.8f, 0f);
+    private static readonly Vector2 PosCoordenador = new Vector2(-5f, 0f);
+    private static readonly Vector2 ConvCenter = new Vector2(-7f, 2f);
+    private const float ConvCanvas = 14f; // convivencia_ext.png é quadrada (1254x1254)
     private static readonly Vector2 PosBloco1 = new Vector2(2f, 10f);      // Bloco 1 (001)
     private static readonly Vector2 PosBloco1Front = new Vector2(2f, 4.4f); // frente da porta do Bloco 1
-    private static readonly Vector2 PosPortal = new Vector2(2f, -14f);     // Bloco 3 (003)
+    private static readonly Vector2 PosPortal = new Vector2(2f, -6f);      // Bloco 3 (003)
     private static readonly Vector2 PosMazePortal = new Vector2(-6f, -6f); // portal da prova (área aberta)
-    private static readonly Vector3 ReturnPos = new Vector3(-8f, 3f, 0f);
+    private static readonly Vector3 ReturnPos = new Vector3(-5f, -1.8f, 0f);
 
     private static Sprite s_white;
     private static int roomCounter;
@@ -313,14 +317,25 @@ public static class TopDownSceneBuilder
     // Interiores (top-down) usados após a transição de tela.
     private const string BlocoInteriorPath = "Assets/Art/Campus/bloco_pixel.png";
     private const string RUInteriorPath = "Assets/Art/Campus/ru_pixel.png";
+    // ac_interno.png já vem cortada (sem a borda branca do arquivo original).
+    private const string ACInteriorPath = "Assets/Art/Campus/ac_interno.png";
+    // sala_aula.png já vem cortada — 718x857 (aspect 0.838), paredes+lousa+carteiras
+    // já desenhadas; só a porta (embaixo, centralizada) é passável.
+    private const string SalaAulaPath = "Assets/Art/Campus/sala_aula.png";
     // Exteriores (perspectiva) mostrados no campus. Todos 1122x1402 (aspect 0.8).
     private const string Bloco1ExtPath = "Assets/Art/Campus/bloco1_ext.png";
     private const string Bloco2ExtPath = "Assets/Art/Campus/bloco2_ext.png";
     private const string Bloco34ExtPath = "Assets/Art/Campus/bloco34_ext.png";
     private const string RUExtPath = "Assets/Art/Campus/ru_ext.png";
+    // Convivência é quadrada (1254x1254, aspect 1.0), diferente dos blocos/RU (0.8).
+    private const string ConvivenciaExtPath = "Assets/Art/Campus/convivencia_ext.png";
     private const string GrassTilePath = "Assets/Art/Env/grass_tile.png";
     private const string BushPath = "Assets/Art/Env/bush.png";
     private const string TreePath = "Assets/Art/Env/tree.png";
+    // Passarela Guarita↔Convivência. Já vem cortada — 340x1024 (aspect 0.332).
+    private const string CaminhoEntradaPath = "Assets/Art/Env/caminho_entrada.png";
+    // Estrada em H dos blocos (só chão, sem colisão). Já vem cortada — 804x708.
+    private const string CaminhoBlocoPath = "Assets/Art/Env/caminho_bloco.png";
 
     private static void BuildCampus(Transform root, Sprite white)
     {
@@ -354,11 +369,66 @@ public static class TopDownSceneBuilder
         CreateQuad(root, "Estacionamento", new Vector2(0f, 29f), new Vector2(58f, 9f), new Color(0.26f, 0.26f, 0.28f), white, -9, false);
         Label(root, "ESTACIONAMENTO", new Vector2(0f, 29f), new Color(0.85f, 0.85f, 0.9f));
 
-        // Caminhos internos (visuais).
-        CreateQuad(root, "Path_Guarita", new Vector2(-6f, 15f), new Vector2(4f, 14f), path, white, -9, false);
-        CreateQuad(root, "Path_Central", new Vector2(2f, 2f), new Vector2(26f, 4f), path, white, -9, false);
-        CreateQuad(root, "Path_Blocos_V", new Vector2(2f, -2f), new Vector2(4f, 28f), path, white, -9, false);
-        CreateQuad(root, "Path_009", new Vector2(2f, -24f), new Vector2(4f, 16f), path, white, -9, false);
+        // Caminhos internos (visuais/passarelas). Toda rua converge na Convivência
+        // ou na rua de entrada (ao lado da Guarita) — nunca fica solta no meio do mato.
+
+        // Passarela da entrada (caminho_entrada.png) — liga a Guarita à Convivência.
+        // O fim dela (y=6.9) encosta bem no desenho visível da AC — o conteúdo
+        // visível de convivencia_ext.png só começa em y≈6.9 (mesma fração 0.151 de
+        // convBTop), o resto do quadrado de 14x14 é margem transparente. O começo
+        // (y=22) entra um pouco embaixo da Guarita, igual a passarela reta antiga.
+        const float entradaX = -6f, entradaTop = 22f, entradaBottom = 6.9f;
+        const float entradaH = entradaTop - entradaBottom, entradaW = entradaH * (340f / 1024f);
+        Sprite entradaArt = GetEnvSprite(CaminhoEntradaPath, 100f, repeat: false);
+        Vector2 entradaCenter = new Vector2(entradaX, (entradaTop + entradaBottom) / 2f);
+        if (entradaArt != null)
+            StretchedSprite(root, "Path_Entrada", entradaCenter, new Vector2(entradaW, entradaH), entradaArt, -8, Color.white);
+        else
+            CreateQuad(root, "Path_Entrada", entradaCenter, new Vector2(entradaW, entradaH), path, white, -9, false);
+        float entradaLeft = entradaX - entradaW / 2f, entradaRight = entradaX + entradaW / 2f;
+        float entradaWalkL = entradaLeft + (125f / 340f) * entradaW;
+        float entradaWalkR = entradaLeft + (210f / 340f) * entradaW;
+
+        // Só tem física onde a arte mostra a cerca de madeira (o resto é só sebe
+        // baixa/grama, sem barreira de verdade) — medido por cor na imagem. A
+        // cerca alterna de lado ao longo da curva; o trecho final (perto da AC)
+        // não tem cerca nenhuma, por isso não tinha física ali antes.
+        void CercaMadeira(string name, bool ladoEsquerdo, float imgY0, float imgY1)
+        {
+            float wy0 = entradaTop - (imgY0 / 1024f) * entradaH;
+            float wy1 = entradaTop - (imgY1 / 1024f) * entradaH;
+            float x0 = ladoEsquerdo ? entradaLeft : entradaWalkR;
+            float x1 = ladoEsquerdo ? entradaWalkL : entradaRight;
+            CreateQuad(root, name, new Vector2((x0 + x1) / 2f, (wy0 + wy1) / 2f),
+                new Vector2(x1 - x0, wy0 - wy1), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+        }
+        CercaMadeira("Path_Entrada_Cerca_O1", true, 0f, 215f);
+        CercaMadeira("Path_Entrada_Cerca_O2", true, 420f, 505f);
+        CercaMadeira("Path_Entrada_Cerca_L1", false, 270f, 425f);
+        CercaMadeira("Path_Entrada_Cerca_L2", false, 540f, 700f);
+        CercaMadeira("Path_Entrada_Cerca_L3", false, 710f, 820f);
+
+        // Estrada em H dos blocos (caminho_bloco.png) — é só chão (sem colisão,
+        // totalmente caminhável por cima), sempre desenhado embaixo (sorting -8).
+        // As duas colunas do H caem quase exatas em cima de x=2 (Bloco 1/3) e x=13
+        // (Bloco 2/4) sem precisar mover nenhum bloco — só a altura/escala foi
+        // ajustada (proporção original da arte preservada).
+        const float blocoW = 17.07f, blocoH = 15.03f;
+        Vector2 blocoCenter = new Vector2(6.21f, 2f);
+        Sprite blocoArt = GetEnvSprite(CaminhoBlocoPath, 100f, repeat: false);
+        if (blocoArt != null)
+            StretchedSprite(root, "Path_Blocos_H", blocoCenter, new Vector2(blocoW, blocoH), blocoArt, -8, Color.white);
+        else
+            CreateQuad(root, "Path_Blocos_H", blocoCenter, new Vector2(blocoW, blocoH), path, white, -9, false);
+
+        // Trechos que ficam fora da estrada em H: da ponta de baixo dela até a porta
+        // sul de verdade dos Blocos 3 e 4 (a arte em H só cobre o lado norte deles).
+        CreateQuad(root, "Path_009", new Vector2(2f, -14.25f), new Vector2(4f, 17.5f), path, white, -9, false);
+        CreateQuad(root, "Path_Bloco4_Sul", new Vector2(13f, -8f), new Vector2(4f, 5.5f), path, white, -9, false);
+
+        // Saída norte (túnel) do Bloco 1/2 → cruza com a passarela da entrada,
+        // direcionando para o início da rua da Guarita.
+        CreateQuad(root, "Path_SaidaNorte_12", new Vector2(3.5f, 17.4f), new Vector2(21f, 5f), path, white, -9, false);
 
         var roofServico = new Color(0.42f, 0.48f, 0.30f);   // telhado serviço (verde)
 
@@ -370,26 +440,107 @@ public static class TopDownSceneBuilder
         BuildRUBuilding(root, "RU (007)", new Vector2(-22f, 2f), 22f,
             RUExtPath, new Vector4(0.022f, 0.301f, 0.977f, 0.627f), 0.506f, 0.627f);
 
-        // 005 — Convivência (entre o RU e os blocos) — aberta (spawn), piso em peça única.
-        Sprite floorS = CampusAssets.Get("floor");
-        if (floorS != null) StretchedSprite(root, "Floor_Convivencia", new Vector2(-8f, 2f), new Vector2(8f, 8f), floorS, -8, Color.white);
-        else CreateQuad(root, "Floor_Convivencia", new Vector2(-8f, 2f), new Vector2(8f, 8f), new Color(0.22f, 0.32f, 0.20f), white, -8, false);
-        Label(root, "CONVIVENCIA (005)", new Vector2(-8f, 6.6f), new Color(0.9f, 1f, 0.9f));
+        // 005 — Convivência (entre o RU e os blocos): arte externa convivencia_ext.png
+        // (prédio coberto + deck/escada + jardim, quadrada — canvasW = canvasH, ao
+        // contrário dos blocos/RU que são 0.8). Só a parte COBERTA (telhado/parede)
+        // é sólida; o deck, a escada e o jardim continuam caminháveis — é ali que o
+        // jogador nasce e o Coordenador fica (PosCoordenador/SpawnPos).
+        Sprite convArt = GetEnvSprite(ConvivenciaExtPath, 100f, repeat: false);
+        if (convArt != null)
+            StretchedSprite(root, "Ext_Convivencia", ConvCenter, new Vector2(ConvCanvas, ConvCanvas), convArt, 3, Color.white);
+        else
+            CreateQuad(root, "Floor_Convivencia", ConvCenter, new Vector2(8f, 8f), new Color(0.22f, 0.32f, 0.20f), white, -8, false);
+
+        // Caixa sólida só do prédio coberto (telhado + parede), medida na arte.
+        float convBL = ConvCenter.x + (0.33f - 0.5f) * ConvCanvas;
+        float convBR = ConvCenter.x + (0.86f - 0.5f) * ConvCanvas;
+        float convBTop = ConvCenter.y + (0.5f - 0.151f) * ConvCanvas;
+        float convBBot = ConvCenter.y + (0.5f - 0.522f) * ConvCanvas;
+        CreateQuad(root, "ConvCol", new Vector2((convBL + convBR) / 2f, (convBTop + convBBot) / 2f),
+            new Vector2(convBR - convBL, convBTop - convBBot), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+
+        // Árvores do jardim (canto esquerdo da arte) — colisão no tronco, igual aos
+        // vasos dos blocos; a copa desenhada continua visível por cima do jogador.
+        var convTrees = new[]
+        {
+            new Vector2(0.207f, 0.303f),
+            new Vector2(0.160f, 0.558f),
+            new Vector2(0.223f, 0.521f),
+            new Vector2(0.287f, 0.596f),
+        };
+        for (int t = 0; t < convTrees.Length; t++)
+        {
+            float tx = ConvCenter.x + (convTrees[t].x - 0.5f) * ConvCanvas;
+            float ty = ConvCenter.y + (0.5f - convTrees[t].y) * ConvCanvas;
+            CreateQuad(root, $"ConvTree_{t}", new Vector2(tx, ty), new Vector2(1.2f, 1.2f),
+                new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+        }
+
+        Label(root, "CONVIVENCIA (005)", new Vector2(ConvCenter.x, convBTop + 0.8f), new Color(0.9f, 1f, 0.9f));
+
+        // Interior da Convivência (ac_interno.png): diferente dos blocos (só
+        // norte/sul), aqui os 4 lados do prédio coberto têm porta própria — entrar
+        // por cima aparece em cima, pela direita aparece pela direita, etc., e sai
+        // sempre pelo mesmo lado por onde entrou.
+        float acDoorX = (convBL + convBR) / 2f;
+        const float acSideY = 2.5f; // altura das portas leste/oeste (longe das árvores e do Bloco 1)
+        Vector3 acNorthFront = new Vector3(acDoorX, convBTop + 2.6f, 0f);
+        Vector3 acSouthFront = new Vector3(acDoorX, convBBot - 2.6f, 0f);
+        Vector3 acEastFront = new Vector3(convBR + 2.6f, acSideY, 0f);
+        Vector3 acWestFront = new Vector3(convBL - 2.6f, acSideY, 0f);
+
+        BuildConvivenciaInterior(acNorthFront, acSouthFront, acEastFront, acWestFront,
+            out Vector3 acNorthSpawn, out Vector3 acSouthSpawn, out Vector3 acEastSpawn, out Vector3 acWestSpawn,
+            out Vector2 acBmin, out Vector2 acBmax);
+
+        // Personagens ficam pequenos demais no salão de 26x26 da AC — o jogador
+        // também aumenta ao entrar (mesma escala do Vitim) e volta ao normal ao sair.
+        const float acPlayerScale = 1.6f;
+        void ConvDoor(string name, Vector2 triggerPos, Vector3 spawn, Vector3 front)
+        {
+            var trig = new GameObject(name);
+            trig.transform.SetParent(root, false);
+            trig.transform.position = triggerPos;
+            var box = trig.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(2.6f, 2.2f);
+            var bd = trig.AddComponent<BuildingDoor>();
+            bd.roomSpawn = spawn;
+            bd.returnPosition = front;
+            bd.roomBoundsMin = acBmin;
+            bd.roomBoundsMax = acBmax;
+            bd.roomLabel = "Convivência (005)";
+            bd.playerScale = acPlayerScale;
+        }
+        ConvDoor("Door_Convivencia_N", new Vector2(acDoorX, convBTop + 0.9f), acNorthSpawn, acNorthFront);
+        ConvDoor("Door_Convivencia_S", new Vector2(acDoorX, convBBot - 0.9f), acSouthSpawn, acSouthFront);
+        ConvDoor("Door_Convivencia_L", new Vector2(convBR + 0.9f, acSideY), acEastSpawn, acEastFront);
+        ConvDoor("Door_Convivencia_O", new Vector2(convBL - 0.9f, acSideY), acWestSpawn, acWestFront);
 
         // 001–004 — Blocos didáticos: exterior (perspectiva) no campus; entrar faz
-        // TRANSIÇÃO para o interior top-down (bloco_pixel) com as 3 salas.
+        // TRANSIÇÃO para o interior top-down (bloco_pixel) com as 3 salas. Todos
+        // funcionam como túnel de dois lados: porta sul E porta norte (hasNorthDoor),
+        // dá pra entrar/sair por qualquer lado nos 4 blocos.
+        // Blocos 2-4 usam uma "canvasH" maior (15.3 vs 12) porque a arte deles tem
+        // a construção ocupando uma fração menor do canvas (~0.61 de altura contra
+        // ~0.78 do Bloco 1) — sem compensar, ficavam visivelmente menores que o Bloco 1.
+        // Fractions de conteúdo/porta remedidas em 02/07/2026 (arte com correção de
+        // estilo) — altura e âncora inferior mantidas iguais à arte anterior, só a
+        // largura mudou (arte nova é mais estreita).
         BuildBlocoBuilding(root, "BLOCO 1 (001)", PosBloco1, 12f,
-            Bloco1ExtPath, new Vector4(0.225f, 0.098f, 0.774f, 0.878f), 0.504f, 0.878f);
-        BuildBlocoBuilding(root, "BLOCO 2 (002)", new Vector2(13f, 10f), 12f,
-            Bloco2ExtPath, new Vector4(0.283f, 0.185f, 0.713f, 0.796f), 0.505f, 0.796f);
-        BuildBlocoBuilding(root, "BLOCO 3 (003)", PosPortal, 12f,
-            Bloco34ExtPath, new Vector4(0.283f, 0.184f, 0.714f, 0.796f), 0.503f, 0.796f);
-        BuildBlocoBuilding(root, "BLOCO 4 (004)", new Vector2(13f, -14f), 12f,
-            Bloco34ExtPath, new Vector4(0.283f, 0.184f, 0.714f, 0.796f), 0.503f, 0.796f);
+            Bloco1ExtPath, new Vector4(0.286f, 0.098f, 0.714f, 0.878f), 0.500f, 0.878f, true);
+        BuildBlocoBuilding(root, "BLOCO 2 (002)", new Vector2(13f, 10f), 15.3f,
+            Bloco2ExtPath, new Vector4(0.332f, 0.185f, 0.668f, 0.796f), 0.500f, 0.796f, true);
+        BuildBlocoBuilding(root, "BLOCO 3 (003)", PosPortal, 15.3f,
+            Bloco34ExtPath, new Vector4(0.340f, 0.184f, 0.660f, 0.796f), 0.500f, 0.796f, true);
+        BuildBlocoBuilding(root, "BLOCO 4 (004)", new Vector2(13f, -6f), 15.3f,
+            Bloco34ExtPath, new Vector4(0.340f, 0.184f, 0.660f, 0.796f), 0.500f, 0.796f, true);
 
-        // 008 / 009 — Depósitos (fechados, sem interior).
+        // 008 / 009 — Depósitos (fechados, sem interior). O 009 fica na mesma coluna
+        // do Bloco 3 (x=2), à mesma distância do Bloco 3 que existe entre o Bloco 1 e
+        // o Bloco 3 (16 unidades), ligado pela Path_Blocos_V + Path_009.
         CoveredBlock(root, "DEP. (008)", new Vector2(-24f, -10f), new Vector2(6f, 3f), roofServico, 'X', false);
-        CoveredBlock(root, "DEP. (009)", new Vector2(2f, -32f), new Vector2(7f, 3f), roofServico, 'X', false);
+        CoveredBlock(root, "DEP. (009)", new Vector2(2f, -22f), new Vector2(7f, 3f), roofServico, 'X', false);
 
         // Vegetação preenchendo o gramado (clusters, longe de prédios/caminhos).
         ScatterFoliage(root);
@@ -414,13 +565,14 @@ public static class TopDownSceneBuilder
         void Block(float x, float y, float w, float h, float m)
             => blocked.Add(new Vector4(x, y, w / 2f + m, h / 2f + m));
         // Footprints dos exteriores em perspectiva (base ao sul).
-        Block(2, 10, 7, 11, 1.5f); Block(13, 10, 6, 9, 1.5f);
-        Block(2, -14, 6, 9, 1.5f); Block(13, -14, 6, 9, 1.5f);
+        Block(2, 10, 7, 11, 1.5f); Block(13, 10, 7, 11, 1.5f);
+        Block(2, -6, 7, 11, 1.5f); Block(13, -6, 7, 11, 1.5f);
         Block(-22, 2.8f, 18, 9, 1.5f); Block(-6, 22, 5, 4, 1.5f);
-        Block(-24, -10, 6, 3, 1.5f); Block(2, -32, 7, 3, 1.5f);
-        Block(-8, 2, 8, 8, 1.5f);                       // Convivência / spawn
-        Block(2, 2, 26, 4, 1f); Block(2, -2, 4, 28, 1f); // caminhos
-        Block(2, -24, 4, 16, 1f); Block(-6, 15, 4, 14, 1f);
+        Block(-24, -10, 6, 3, 1.5f); Block(2, -22, 7, 3, 1.5f);
+        Block(-7, 2, 11, 10, 1.5f);                      // Convivência / spawn
+        Block(1, 2, 28, 5, 1f); Block(2, -2, 4, 28, 1f); // caminhos (praça central / coluna esq.)
+        Block(2, -19, 4, 8, 1f); Block(-6, 15, 4, 14, 1f);
+        Block(13, -4.5f, 4, 21, 1f); Block(3.5f, 17.4f, 21, 5, 1f); // coluna dir. / saída norte 1-2
         Block(-6, -6, 3, 3, 2f);                        // portal da prova
 
         bool Free(float x, float y)
@@ -511,37 +663,6 @@ public static class TopDownSceneBuilder
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
-    private static void VWall(Transform parent, string name, float x, float yMin, float yMax,
-        Color color, Sprite white)
-    {
-        float cy = (yMin + yMax) * 0.5f;
-        float h = Mathf.Abs(yMax - yMin);
-        if (h <= 0f) return;
-        CreateQuad(parent, name, new Vector2(x, cy), new Vector2(WallT, h), color, white, 0, true);
-    }
-
-    private static void VWallWithGap(Transform parent, string baseName, float x, float yMin, float yMax,
-        float gapMin, float gapMax, Color color, Sprite white)
-    {
-        VWall(parent, baseName + "_a", x, yMin, gapMin, color, white);
-        VWall(parent, baseName + "_b", x, gapMax, yMax, color, white);
-    }
-
-    private static void HWall(Transform parent, string name, float y, float xMin, float xMax, Color color, Sprite white)
-    {
-        float cx = (xMin + xMax) * 0.5f;
-        float wdt = Mathf.Abs(xMax - xMin);
-        if (wdt <= 0f) return;
-        CreateQuad(parent, name, new Vector2(cx, y), new Vector2(wdt, WallT), color, white, 0, true);
-    }
-
-    private static void HWallWithGap(Transform parent, string baseName, float y, float xMin, float xMax,
-        float gapMin, float gapMax, Color color, Sprite white)
-    {
-        HWall(parent, baseName + "_a", y, xMin, gapMin, color, white);
-        HWall(parent, baseName + "_b", y, gapMax, xMax, color, white);
-    }
-
     /// <summary>
     /// Prédio COBERTO visto por fora: telhado opaco (peça única) + porta.
     /// É sólido (não dá pra entrar andando). Se hasInterior, cria uma sala numa
@@ -610,12 +731,39 @@ public static class TopDownSceneBuilder
         interiorsRoot = new GameObject("Interiors").transform;
     }
 
-    /// <summary>Bloco: exterior no campus + interior por transição de tela.</summary>
-    private static void BuildBlocoBuilding(Transform root, string label, Vector2 center, float canvasH,
-        string extPath, Vector4 content, float doorNormX, float doorBottomNormY)
+    /// <summary>
+    /// Posições de "frente" (fora do prédio) nos lados sul e norte, calculadas a
+    /// partir do canvas/conteúdo — usadas tanto pelas portas (BuildExterior) quanto
+    /// pelos tapetes de saída do interior (BuildBlocoInterior), para os dois lados
+    /// sempre concordarem sobre onde cada saída deixa o jogador no mundo.
+    /// </summary>
+    private static (Vector3 south, Vector3 north) BlocoFrontPositions(Vector2 center, float canvasH,
+        Vector4 content, float doorNormX, float doorBottomNormY)
     {
-        var (spawn, bmin, bmax) = BuildBlocoInterior(label);
-        BuildExterior(root, label, center, canvasH, extPath, content, doorNormX, doorBottomNormY, spawn, bmin, bmax);
+        float canvasW = canvasH * 0.8f;
+        float doorX = center.x + (doorNormX - 0.5f) * canvasW;
+        float doorGY = center.y + (0.5f - doorBottomNormY) * canvasH;
+        float ctop = center.y + (0.5f - content.y) * canvasH;
+        Vector3 south = new Vector3(doorX, doorGY - 2.6f, 0f);
+        Vector3 north = new Vector3(center.x, ctop + 2.6f, 0f);
+        return (south, north);
+    }
+
+    /// <summary>
+    /// Bloco: exterior no campus + interior por transição de tela. Funciona como
+    /// um túnel: entra pela porta sul (sempre existe) e pode sair pelo tapete norte
+    /// do corredor, chegando do outro lado do prédio. Se hasNorthDoor, também dá
+    /// para ENTRAR pelo lado norte (sem porta visível) — usado nos Blocos 3 e 4.
+    /// </summary>
+    private static void BuildBlocoBuilding(Transform root, string label, Vector2 center, float canvasH,
+        string extPath, Vector4 content, float doorNormX, float doorBottomNormY, bool hasNorthDoor)
+    {
+        var (southFront, northFront) = BlocoFrontPositions(center, canvasH, content, doorNormX, doorBottomNormY);
+        var (southSpawn, northSpawn, bmin, bmax) = BuildBlocoInterior(label, southFront, northFront);
+        // Personagens ficam pequenos demais no corredor do bloco — mesmo ajuste de
+        // escala (1.6x) já feito na AC e na sala de aula.
+        BuildExterior(root, label, center, canvasH, extPath, content, doorNormX, doorBottomNormY,
+            southSpawn, bmin, bmax, hasNorthDoor ? (Vector3?)northSpawn : null, playerScale: 1.6f);
     }
 
     /// <summary>RU: exterior (lateral) no campus + refeitório por transição de tela.</summary>
@@ -634,7 +782,7 @@ public static class TopDownSceneBuilder
     /// </summary>
     private static void BuildExterior(Transform root, string label, Vector2 center, float canvasH,
         string extPath, Vector4 content, float doorNormX, float doorBottomNormY,
-        Vector3 spawn, Vector2 bmin, Vector2 bmax)
+        Vector3 spawn, Vector2 bmin, Vector2 bmax, Vector3? northSpawn = null, float playerScale = 1f)
     {
         float canvasW = canvasH * 0.8f; // artes externas são 1122x1402 (0.8)
         Vector2 size = new Vector2(canvasW, canvasH);
@@ -670,6 +818,27 @@ public static class TopDownSceneBuilder
         bd.roomBoundsMin = bmin;
         bd.roomBoundsMax = bmax;
         bd.roomLabel = label;
+        bd.playerScale = playerScale;
+
+        // Porta norte (só existe se o bloco funcionar como túnel de dois lados —
+        // Blocos 3 e 4). Sem sprite de porta, igual à porta sul.
+        if (northSpawn.HasValue)
+        {
+            var (_, northFront) = BlocoFrontPositions(center, canvasH, content, doorNormX, doorBottomNormY);
+            var ntrig = new GameObject("DoorNorte_" + label);
+            ntrig.transform.SetParent(root, false);
+            ntrig.transform.position = new Vector3(center.x, ctop + 0.9f, 0f);
+            var nbox = ntrig.AddComponent<BoxCollider2D>();
+            nbox.isTrigger = true;
+            nbox.size = new Vector2(2.6f, 2.2f);
+            var nbd = ntrig.AddComponent<BuildingDoor>();
+            nbd.roomSpawn = northSpawn.Value;
+            nbd.returnPosition = northFront;
+            nbd.roomBoundsMin = bmin;
+            nbd.roomBoundsMax = bmax;
+            nbd.roomLabel = label;
+            nbd.playerScale = playerScale;
+        }
 
         Label(root, label, new Vector2(center.x, ctop + 0.8f), new Color(0.96f, 0.96f, 0.88f));
     }
@@ -677,10 +846,13 @@ public static class TopDownSceneBuilder
     /// <summary>
     /// Monta o INTERIOR de um bloco (arte top-down bloco_pixel) numa região afastada.
     /// Corredor central caminhável, vasos com colisão, 3 portas do lado direito que
-    /// levam a salas de aula, e um tapete de saída (RoomExit) que volta ao campus.
-    /// Retorna (spawn, limite mín, limite máx) da câmera para o EnterRoom.
+    /// levam a salas de aula, e DOIS tapetes de saída (RoomExit) — um ao sul e um ao
+    /// norte — que funcionam como um túnel: cada um sempre leva para o respectivo
+    /// lado de fora do prédio (southExit/northExit), não importa por onde se entrou.
+    /// Retorna (spawn sul, spawn norte, limite mín, limite máx) da câmera.
     /// </summary>
-    private static (Vector3, Vector2, Vector2) BuildBlocoInterior(string label)
+    private static (Vector3, Vector3, Vector2, Vector2) BuildBlocoInterior(string label,
+        Vector3 southExit, Vector3 northExit)
     {
         EnsureInteriorsRoot();
         Vector2 c = new Vector2(400f + interiorBldgCounter * 70f, -600f);
@@ -705,12 +877,23 @@ public static class TopDownSceneBuilder
             new Vector2(corridorLeft - leftEdge, size.y), clear, s_white, 0, true);
         CreateQuad(interiorsRoot, "CkR_" + label, new Vector2((corridorRight + rightEdge) / 2f, c.y),
             new Vector2(rightEdge - corridorRight, size.y), clear, s_white, 0, true);
-        // Topo fechado.
-        CreateQuad(interiorsRoot, "CkT_" + label, new Vector2(c.x, top - 0.3f),
-            new Vector2(corridorRight - corridorLeft, 0.6f), clear, s_white, 0, true);
-        // Base com vão central (entrada/saída) e tapete de saída.
         float gapHalf = 0.085f * size.x;
         float gapL = c.x - gapHalf, gapR = c.x + gapHalf;
+
+        // Topo com vão central (funciona como túnel: tapete de saída pro lado norte).
+        CreateQuad(interiorsRoot, "CkTopL_" + label, new Vector2((corridorLeft + gapL) / 2f, top - 0.3f),
+            new Vector2(gapL - corridorLeft, 0.6f), clear, s_white, 0, true);
+        CreateQuad(interiorsRoot, "CkTopR_" + label, new Vector2((gapR + corridorRight) / 2f, top - 0.3f),
+            new Vector2(corridorRight - gapR, 0.6f), clear, s_white, 0, true);
+        var topMat = CreateQuad(interiorsRoot, "CExitTop_" + label, new Vector2(c.x, top - 1.1f),
+            new Vector2(gapHalf * 1.8f, 1.0f), new Color(0.3f, 1f, 0.4f, 0.3f), s_white, -9, false);
+        var topCol = topMat.AddComponent<BoxCollider2D>();
+        topCol.isTrigger = true;
+        var topExit = topMat.AddComponent<RoomExit>();
+        topExit.useOverridePosition = true;
+        topExit.overridePosition = northExit;
+
+        // Base com vão central (entrada/saída original, ao sul) e tapete de saída.
         CreateQuad(interiorsRoot, "CkBotL_" + label, new Vector2((corridorLeft + gapL) / 2f, bottom + 0.3f),
             new Vector2(gapL - corridorLeft, 0.6f), clear, s_white, 0, true);
         CreateQuad(interiorsRoot, "CkBotR_" + label, new Vector2((gapR + corridorRight) / 2f, bottom + 0.3f),
@@ -719,7 +902,9 @@ public static class TopDownSceneBuilder
             new Vector2(gapHalf * 1.8f, 1.0f), new Color(0.3f, 1f, 0.4f, 0.3f), s_white, -9, false);
         var mcol = mat.AddComponent<BoxCollider2D>();
         mcol.isTrigger = true;
-        mat.AddComponent<RoomExit>();
+        var southExitComp = mat.AddComponent<RoomExit>();
+        southExitComp.useOverridePosition = true;
+        southExitComp.overridePosition = southExit;
 
         // Vasos (colisão): 2 colunas × 3 fileiras.
         var pots = new[]
@@ -736,6 +921,35 @@ public static class TopDownSceneBuilder
                 new Vector2(0.6f, 0.45f), clear, s_white, 0, true);
         }
 
+        // NPCs de ambiente no corredor (papo simples, sem ligação com a quest
+        // principal). Yasmin anda até 4 passos (NpcPatrol); Enzo fica parado.
+        // Vitim mudou pra Convivência (ver BuildConvivenciaInterior), na mesa de pingpong.
+        if (label == "BLOCO 3 (003)")
+            CreateAmbientNpc(interiorsRoot, "yasmin.png", new Vector2(c.x, c.y), "Yasmin", "yasmin",
+                new[]
+                {
+                    "Oi! Você também tá tentando decorar o mapa do campus?",
+                    "Eu ainda me perco tentando achar o Bloco 4.",
+                },
+                patrolDir: Vector2.up,
+                choiceQuestion: "Quer que eu te dê uma dica de atalho?",
+                optionA: "Quero sim!", optionB: "Vou explorar sozinho.",
+                replyA: "Os corredores dos blocos se conectam por dentro — economiza um tempão.",
+                replyB: "Beleza, boa exploração então!",
+                scale: 1.6f);
+        else if (label == "BLOCO 4 (004)")
+            CreateAmbientNpc(interiorsRoot, "enzo.png", new Vector2(c.x, c.y), "Enzo", "enzo",
+                new[]
+                {
+                    "E aí! Bloco 4 também tem uma vibe boa, não é?",
+                    "Fico por aqui entre uma aula e outra.",
+                },
+                choiceQuestion: "Já fez algum amigo na turma?",
+                optionA: "Já, sim!", optionB: "Ainda não, sou meio tímido.",
+                replyA: "Que ótimo! Isso ajuda muito a segurar a barra do semestre.",
+                replyB: "Relaxa, todo mundo tá igual no início. Vai rolar.",
+                scale: 1.6f);
+
         // 3 portas do lado direito → salas de aula.
         float[] dy = { 0.307f, 0.0185f, -0.326f };
         for (int i = 0; i < dy.Length; i++)
@@ -743,6 +957,33 @@ public static class TopDownSceneBuilder
             float doorY = c.y + dy[i] * size.y;
             string salaLabel = label + " — Sala " + (i + 1);
             var (sspawn, sbmin, sbmax) = BuildInteriorRoom(salaLabel);
+
+            // Rainara (professora de IHC) fica na Sala 1 do Bloco 1 — é a ÚNICA
+            // sala liberada por enquanto (ClassSchedule.CurrentRoomId). As outras
+            // mostram um "pensamento" de sala errada em vez de abrir (ver BuildingDoor).
+            if (label == "BLOCO 1 (001)" && i == 0)
+            {
+                ClassSchedule.CurrentRoomId = salaLabel;
+                ClassSchedule.CurrentRoomLabel = "IHC com a Rainara (Bloco 1, Sala 1)";
+
+                // Em pé no vão livre entre a mesa do professor e a 1ª fileira de
+                // carteiras (não sentada — a arte só tem a cadeira vazia atrás da
+                // mesa, ficar ali dava a impressão de estar em cima da mesa).
+                // Escala maior (1.6x), mesmo motivo da Convivência: a arte da sala
+                // é "de perto" e os personagens ficam pequenos no tamanho normal.
+                float rx = (sbmin.x + sbmax.x) / 2f;
+                CreateAmbientNpc(interiorsRoot, "rainara.png", new Vector2(rx, sbmax.y - 6f), "Rainara", "rainara",
+                    new[]
+                    {
+                        "Ah, um calouro por aqui! Bem-vindo à sala de IHC.",
+                        "Interação Humano-Computador é entender como as pessoas usam a tecnologia — não só programar, mas pensar em quem vai usar.",
+                    },
+                    choiceQuestion: "Já pensou em como isso vai te ajudar no curso?",
+                    optionA: "Parece interessante!", optionB: "Ainda não sei bem o que esperar.",
+                    replyA: "Ótimo! Você vai gostar das aulas, então.",
+                    replyB: "Sem pressa — isso fica mais claro com o tempo. Bons estudos!",
+                    scale: 1.6f);
+            }
 
             var trig = new GameObject("SalaDoor_" + salaLabel);
             trig.transform.SetParent(interiorsRoot, false);
@@ -756,11 +997,14 @@ public static class TopDownSceneBuilder
             bd.roomBoundsMin = sbmin;
             bd.roomBoundsMax = sbmax;
             bd.roomLabel = salaLabel;
+            bd.classroomId = salaLabel;
+            bd.playerScale = 1.6f; // mesma escala da Rainara — arte da sala é "de perto"
         }
 
         Label(interiorsRoot, "CORREDOR — " + label, new Vector2(c.x, top + 1.0f), new Color(0.96f, 0.96f, 0.88f));
-        Vector3 spawn = new Vector3(c.x, bottom + 3.0f, 0f);
-        return (spawn, new Vector2(leftEdge, bottom), new Vector2(rightEdge, top));
+        Vector3 southSpawn = new Vector3(c.x, bottom + 3.0f, 0f);
+        Vector3 northSpawn = new Vector3(c.x, top - 3.0f, 0f);
+        return (southSpawn, northSpawn, new Vector2(leftEdge, bottom), new Vector2(rightEdge, top));
     }
 
     /// <summary>
@@ -824,6 +1068,118 @@ public static class TopDownSceneBuilder
         return (spawn, new Vector2(leftEdge, bottom), new Vector2(rightEdge, top));
     }
 
+    /// <summary>
+    /// Monta o INTERIOR da Convivência (ac_interno.png: mesa de pingpong, mesas,
+    /// balcão de lanches) numa região afastada. Diferente dos blocos (só norte/
+    /// sul), aqui as 4 direções têm entrada/saída própria: entrar por um lado
+    /// aparece no lado correspondente de dentro, e sair devolve pro mesmo lado de
+    /// fora — não é um "atalho" de um lado pro outro.
+    /// </summary>
+    private static void BuildConvivenciaInterior(Vector3 northFront, Vector3 southFront,
+        Vector3 eastFront, Vector3 westFront,
+        out Vector3 northSpawn, out Vector3 southSpawn, out Vector3 eastSpawn, out Vector3 westSpawn,
+        out Vector2 bmin, out Vector2 bmax)
+    {
+        EnsureInteriorsRoot();
+        Vector2 c = new Vector2(400f + interiorBldgCounter * 70f, -600f);
+        interiorBldgCounter++;
+
+        // 26x26 (maior que os 20x20 dos blocos) — dá folga suficiente entre os
+        // móveis e as 4 saídas sem precisar de paredes/corredores internos.
+        const float size = 26f;
+        float half = size / 2f;
+        float top = c.y + half, bottom = c.y - half, left = c.x - half, right = c.x + half;
+        Color clear = new Color(0f, 0f, 0f, 0f);
+
+        Sprite art = GetEnvSprite(ACInteriorPath, 100f, repeat: false);
+        if (art != null)
+            StretchedSprite(interiorsRoot, "AC_Interior", c, new Vector2(size, size), art, -10, Color.white);
+        else
+            CreateQuad(interiorsRoot, "AC_Interior", c, new Vector2(size, size), new Color(0.85f, 0.6f, 0.55f), s_white, -10, false);
+
+        // Física dos móveis (retângulos medidos na arte, fração do canvas 0..1;
+        // y cresce pra baixo na arte, por isso "top - ny*size").
+        void Furniture(string name, float nx0, float ny0, float nx1, float ny1)
+        {
+            float fl = left + nx0 * size, fr = left + nx1 * size;
+            float ft = top - ny0 * size, fb = top - ny1 * size;
+            CreateQuad(interiorsRoot, name, new Vector2((fl + fr) / 2f, (ft + fb) / 2f),
+                new Vector2(fr - fl, ft - fb), clear, s_white, 0, true);
+        }
+        Furniture("AC_PingPong", 0.102f, 0.209f, 0.292f, 0.573f);
+        // As 4 mesinhas do meio: colisor um pouco menor que a arte (encolhido pra
+        // dentro ~0.03 de cada lado) — do jeito que estava medido, o vão entre uma
+        // mesa e outra ficava com menos de 1 unidade, impossível de atravessar.
+        Furniture("AC_Mesa_TL", 0.449f, 0.127f, 0.574f, 0.262f);
+        Furniture("AC_Mesa_TR", 0.702f, 0.127f, 0.827f, 0.262f);
+        Furniture("AC_Mesa_BL", 0.449f, 0.351f, 0.574f, 0.485f);
+        Furniture("AC_Mesa_BR", 0.702f, 0.351f, 0.827f, 0.485f);
+        Furniture("AC_Balcao1", 0.355f, 0.607f, 0.857f, 0.772f);
+        Furniture("AC_Balcao2", 0.365f, 0.802f, 0.891f, 0.977f);
+
+        // Saída ao encostar em QUALQUER ponto da borda (não só um tapete pontual) —
+        // cada lado sempre volta pro lado de fora correspondente, não importa por
+        // onde se entrou. Sem isso o jogador conseguia passar da borda do salão e
+        // andar num "void" em vez de sair.
+        void ExitEdge(string name, bool horizontal, float edgeCoord, Vector3 front)
+        {
+            float span = size - 2f; // quase toda a borda, com margem pros cantos
+            Vector2 pos = horizontal ? new Vector2(c.x, edgeCoord) : new Vector2(edgeCoord, c.y);
+            Vector2 boxSize = horizontal ? new Vector2(span, 1.6f) : new Vector2(1.6f, span);
+            var mat = CreateQuad(interiorsRoot, name, pos, boxSize,
+                new Color(0.3f, 1f, 0.4f, 0.15f), s_white, -9, false);
+            var col = mat.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            var exit = mat.AddComponent<RoomExit>();
+            exit.useOverridePosition = true;
+            exit.overridePosition = front;
+        }
+        float pingPongColX = c.x - 8f; // acima/abaixo da mesa de pingpong (fora da altura dela)
+        float eastRowY = c.y - 1f;     // faixa livre de móveis do lado leste
+        float westRowY = c.y - 5f;     // do lado oeste a faixa livre é mais embaixo (abaixo da mesa)
+        ExitEdge("AC_ExitNorte", true, top - 0.8f, northFront);
+        ExitEdge("AC_ExitSul", true, bottom + 0.8f, southFront);
+        ExitEdge("AC_ExitLeste", false, right - 0.8f, eastFront);
+        ExitEdge("AC_ExitOeste", false, left + 0.8f, westFront);
+
+        // Vitim fica parado na frente da mesa de pingpong, desafiando quem passa.
+        // Escala maior (1.6x) porque os personagens ficam pequenos demais nesse
+        // salão de 26x26 — a arte da AC é mais "de perto" que a dos blocos/RU.
+        Vector2 vitimIdleSpot = new Vector2(c.x - 4f, c.y + 2.8f);
+
+        // Posições da partida: centralizadas na LARGURA real da mesa (medida na
+        // arte: vai de c.x-10.3 a c.x-5.4, centro em c.x-7.9), uma logo acima da
+        // ponta norte (c.y+7.6) e outra logo abaixo da ponta sul (c.y-1.9). A
+        // caminhada até lá ignora física (ver VitimPingPongTrigger), então não há
+        // problema em cruzar por cima do colisor da mesa no caminho.
+        Vector2 vitimTableSpot = new Vector2(c.x - 7.9f, c.y + 8.2f);
+        Vector2 playerTableSpot = new Vector2(c.x - 7.9f, c.y - 2.5f);
+
+        var vitim = CreateAmbientNpc(interiorsRoot, "vitim.png", vitimIdleSpot, "Vitim", "vitim",
+            new[] { "Ei! Chegou na hora certa." },
+            choiceQuestion: "Iai, vai marcar time de fora?",
+            optionA: "Bora, to dentro!", optionB: "Agora não, valeu.",
+            replyA: "Boa! Só esperar terminar esse ponto.",
+            replyB: "Show, quando quiser é só chamar.",
+            scale: 1.6f);
+
+        // Aceitando o convite (opção A), os dois andam até os lados opostos da
+        // mesa e o minigame de pingue-pongue carrega (ver VitimPingPongTrigger e
+        // o especial-case em DialogueManager.EndDialogue).
+        var pingPongTrigger = vitim.gameObject.AddComponent<VitimPingPongTrigger>();
+        pingPongTrigger.vitimTableSpot = vitimTableSpot;
+        pingPongTrigger.playerTableSpot = playerTableSpot;
+
+        Label(interiorsRoot, "ÁREA DE CONVIVÊNCIA — interior", new Vector2(c.x, top + 1f), new Color(0.96f, 0.96f, 0.88f));
+
+        northSpawn = new Vector3(pingPongColX, top - 3f, 0f);
+        southSpawn = new Vector3(pingPongColX, bottom + 3f, 0f);
+        eastSpawn = new Vector3(right - 4f, eastRowY, 0f);
+        westSpawn = new Vector3(left + 3f, westRowY, 0f);
+        bmin = new Vector2(left, bottom);
+        bmax = new Vector2(right, top);
+    }
+
     /// <summary>Garante que a arte do bloco está importada como Sprite e a retorna.</summary>
     private static Sprite GetBlocoSprite()
     {
@@ -848,9 +1204,10 @@ public static class TopDownSceneBuilder
     }
 
     /// <summary>
-    /// Monta uma SALA numa região afastada (interiores ficam lado a lado, longe
-    /// do campus). Piso em peça única, paredes contínuas (esticadas, eixos certos),
-    /// lousa + mesa do professor + carteiras, e um tapete de saída (RoomExit).
+    /// Monta uma SALA DE AULA numa região afastada (interiores ficam lado a lado,
+    /// longe do campus), usando a arte única `sala_aula.png` (paredes, lousa, mesa
+    /// do professor e carteiras já desenhadas). Só a porta (embaixo, centralizada)
+    /// é passável — o resto da borda tem colisão sólida (medida na própria arte).
     /// Retorna (spawn do jogador, limite mín da câmera, limite máx).
     /// </summary>
     private static (Vector3 spawn, Vector2 bmin, Vector2 bmax) BuildInteriorRoom(string label)
@@ -861,69 +1218,79 @@ public static class TopDownSceneBuilder
         Vector2 c = new Vector2(300f + roomCounter * 40f, -300f);
         roomCounter++;
 
-        Vector2 rsize = new Vector2(18f, 13f);
-        float hx = rsize.x / 2f, hy = rsize.y / 2f;
+        // sala_aula.png é 718x857 (aspect 0.838) — mantém a mesma proporção aqui.
+        const float rw = 14f, rh = 16.7f;
+        float hx = rw / 2f, hy = rh / 2f;
         float top = c.y + hy, bottom = c.y - hy;
         float left = c.x - hx, right = c.x + hx;
-        float gap = 3.2f; // vão da porta (embaixo)
         Color clear = new Color(0f, 0f, 0f, 0f);
 
-        Sprite floorS = CampusAssets.Get("floor");
-        Sprite wallHS = CampusAssets.Get("wallH");
+        Sprite art = GetEnvSprite(SalaAulaPath, 100f, repeat: false);
+        if (art != null)
+            StretchedSprite(interiorsRoot, "RFloor_" + label, c, new Vector2(rw, rh), art, -10, Color.white);
+        else
+            CreateQuad(interiorsRoot, "RFloor_" + label, c, new Vector2(rw, rh), new Color(0.9f, 0.85f, 0.75f), s_white, -10, false);
 
-        // Piso em peça única.
-        if (floorS != null) StretchedSprite(interiorsRoot, "RFloor_" + label, c, rsize, floorS, -10, Color.white);
-        else CreateQuad(interiorsRoot, "RFloor_" + label, c, rsize, new Color(0.2f, 0.2f, 0.22f), s_white, -10, false);
-
-        // Paredes visuais contínuas (peça única; verticais giradas 90°).
-        const float wt = 1.1f;
-        if (wallHS != null)
+        // Colisão sólida da borda (frações medidas pixel a pixel na arte): paredes
+        // de ~4.7% dos lados, ~16.7% em cima (já inclui a lousa) e ~9.8% embaixo,
+        // com um vão de porta centralizado de ~15% da largura.
+        void Wall(string name, float x0, float y0, float x1, float y1)
         {
-            StretchedSprite(interiorsRoot, "RWallN_" + label, new Vector2(c.x, top), new Vector2(rsize.x + wt, wt), wallHS, 4, Color.white);
-            StretchedSprite(interiorsRoot, "RWallW_" + label, new Vector2(left, c.y), new Vector2(wt, rsize.y), wallHS, 4, Color.white, rotate90: true);
-            StretchedSprite(interiorsRoot, "RWallE_" + label, new Vector2(right, c.y), new Vector2(wt, rsize.y), wallHS, 4, Color.white, rotate90: true);
-            // Parede de baixo em dois pedaços (deixa o vão da porta).
-            float segW = (rsize.x - gap) / 2f;
-            StretchedSprite(interiorsRoot, "RWallS1_" + label, new Vector2(left + segW / 2f, bottom), new Vector2(segW + wt, wt), wallHS, 4, Color.white);
-            StretchedSprite(interiorsRoot, "RWallS2_" + label, new Vector2(right - segW / 2f, bottom), new Vector2(segW + wt, wt), wallHS, 4, Color.white);
+            CreateQuad(interiorsRoot, name, new Vector2((x0 + x1) / 2f, (y0 + y1) / 2f),
+                new Vector2(x1 - x0, y1 - y0), clear, s_white, 0, true);
         }
+        float leftIn = left + 0.047f * rw;
+        float rightIn = right - 0.047f * rw;
+        float topIn = top - 0.167f * rh;
+        float bottomIn = bottom + 0.098f * rh;
+        float doorX0 = left + 0.423f * rw;
+        float doorX1 = left + 0.574f * rw;
 
-        // Colisão das paredes (invisível), com vão embaixo.
-        VWall(interiorsRoot, "RcolW_" + label, left, bottom, top, clear, s_white);
-        VWall(interiorsRoot, "RcolE_" + label, right, bottom, top, clear, s_white);
-        HWall(interiorsRoot, "RcolN_" + label, top, left, right, clear, s_white);
-        HWallWithGap(interiorsRoot, "RcolS_" + label, bottom, left, right, c.x - gap / 2f, c.x + gap / 2f, clear, s_white);
+        Wall("RWallN_" + label, left, topIn, right, top);
+        Wall("RWallW_" + label, left, bottom, leftIn, top);
+        Wall("RWallE_" + label, rightIn, bottom, right, top);
+        Wall("RWallS1_" + label, left, bottom, doorX0, bottomIn);
+        Wall("RWallS2_" + label, doorX1, bottom, right, bottomIn);
 
-        // Mobília: lousa + mesa do professor + carteiras (2x3).
-        Sprite board = CampusAssets.Get("board");
-        Sprite teacher = CampusAssets.Get("teacherDesk");
-        Sprite desk = CampusAssets.Get("deskStudent");
-        if (board != null) Prop(interiorsRoot, "RBoard_" + label, new Vector2(c.x, top - 1.6f), board, 5, 1.2f);
-        if (teacher != null) Prop(interiorsRoot, "RTeacher_" + label, new Vector2(c.x, top - 3.2f), teacher, 6, 1.0f);
-        if (desk != null)
+        // Física do birô da professora e das 12 carteiras (grade 4x3), medida na
+        // arte (frações do canvas 0..1). As carteiras usam um colisor menor que o
+        // desenho (só o "núcleo" da cadeira) pra sobrar corredor de verdade entre
+        // uma fileira/coluna e outra — meio a meio dá pra transitar.
+        void Furniture(float nx0, float ny0, float nx1, float ny1, string name)
         {
-            float startY = top - 5.4f;
-            for (int r = 0; r < 3; r++)
-                for (int col = 0; col < 2; col++)
-                {
-                    float x = c.x + (col == 0 ? -2.2f : 2.2f);
-                    float y = startY - r * 2.1f;
-                    Prop(interiorsRoot, $"RDesk_{label}_{r}_{col}", new Vector2(x, y), desk, 6, 0.9f);
-                }
+            float fl = left + nx0 * rw, fr = left + nx1 * rw;
+            float ft = top - ny0 * rh, fb = top - ny1 * rh;
+            CreateQuad(interiorsRoot, name, new Vector2((fl + fr) / 2f, (ft + fb) / 2f),
+                new Vector2(fr - fl, ft - fb), clear, s_white, 0, true);
         }
+        Furniture(0.397f, 0.1925f, 0.606f, 0.3325f, "RBiro_" + label);
 
-        // Tapete de saída (RoomExit) no vão da porta + sprite de porta.
-        var mat = CreateQuad(interiorsRoot, "RExit_" + label, new Vector2(c.x, bottom + 0.3f),
-            new Vector2(gap * 0.8f, 1.2f), new Color(0.3f, 1f, 0.4f, 0.5f), s_white, -9, false);
+        float[] chairColX0 = { 0.1393f, 0.3545f, 0.5704f, 0.7841f };
+        float[] chairColX1 = { 0.2228f, 0.4380f, 0.6540f, 0.8677f };
+        float[] chairRowY0 = { 0.4078f, 0.5683f, 0.7305f };
+        float[] chairRowY1 = { 0.4778f, 0.6383f, 0.8005f };
+        for (int row = 0; row < 3; row++)
+            for (int col = 0; col < 4; col++)
+                Furniture(chairColX0[col], chairRowY0[row], chairColX1[col], chairRowY1[row],
+                    $"RCadeira_{label}_{row}_{col}");
+
+        // Tapete de saída (RoomExit) no vão da porta — volta pra onde o jogador
+        // entrou. requireInteract=true (só sai apertando E): o spawn dessa sala
+        // fica relativamente perto do tapete, e sair automaticamente ao pisar
+        // expulsava o jogador de volta assim que ele entrava.
+        var mat = CreateQuad(interiorsRoot, "RExit_" + label, new Vector2(c.x, bottom + 0.8f),
+            new Vector2(doorX1 - doorX0, 1.6f), new Color(0.3f, 1f, 0.4f, 0.35f), s_white, -9, false);
         var mcol = mat.AddComponent<BoxCollider2D>();
         mcol.isTrigger = true;
-        mat.AddComponent<RoomExit>();
-        Sprite doorS = CampusAssets.Get("doorOpen");
-        if (doorS != null) Prop(interiorsRoot, "RDoor_" + label, new Vector2(c.x, bottom), doorS, 5, 1.1f);
+        mat.AddComponent<RoomExit>().requireInteract = true;
 
         Label(interiorsRoot, "SALA — " + label, new Vector2(c.x, top + 1.2f), new Color(0.96f, 0.96f, 0.88f));
 
-        Vector3 spawn = new Vector3(c.x, bottom + 1.8f, 0f);
+        // Bem mais afastado do tapete de saída (que termina em bottom+1.6) do que
+        // antes (bottom+2.6) — com o jogador em escala 1.6x nessa sala, a margem
+        // curta deixava o colisor dele já nascer encostando no tapete, disparando
+        // a saída no mesmo instante em que entrava (parecia que nem tinha entrado).
+        Vector3 spawn = new Vector3(c.x, bottom + 4f, 0f);
         return (spawn, new Vector2(left, bottom), new Vector2(right, top));
     }
 
@@ -992,18 +1359,36 @@ public static class TopDownSceneBuilder
                 "Passe no RU e fale com o Natan — ele te mostra o campus.",
                 "Depois siga para o Bloco 1. Boa sorte no semestre!",
             });
+
+        // Batatinha (cachorro do campus) — no mato perto da Convivência. Só um "Au au!",
+        // sem escolha (é um cachorro). Anda livre (área aleatória 10x10) ao redor
+        // de onde nasceu, em vez de só ida-e-volta reta.
+        // A folha do cachorro tem poses em posições diferentes da folha humana
+        // (índices 2/3 = lado direito andando, 4/7 = lado esquerdo, 11 = lado
+        // direito parado) — por isso não reaproveita a convenção padrão (5/6/10).
+        CreateAmbientNpc(root.transform, "batata.png", new Vector2(-9f, -5f), "Batatinha", "batatinha",
+            new[] { "Au au!" }, patrolAreaSize: 10f,
+            downFrames: new[] { 0, 5 }, sideFrames: new[] { 2, 3 }, upFrames: new[] { 1, 6 },
+            downIdle: 8, sideIdle: 11, upIdle: 9, invertSide: true);
     }
 
-    private static void CreateNpc(Transform parent, string objName, string spritePath, Vector2 pos,
+    private static NpcInteractable CreateNpc(Transform parent, string objName, string spritePath, Vector2 pos,
         string displayName, string npcId, string[] lines)
     {
         var go = new GameObject(objName);
         go.transform.SetParent(parent, false);
         go.transform.position = pos;
 
+        var frames = LoadFrames(spritePath);
         var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = LoadFrame(spritePath, DefaultFrame);
+        sr.sprite = frames.Length > DefaultFrame ? frames[DefaultFrame] : LoadFrame(spritePath, DefaultFrame);
         sr.sortingOrder = 5;
+
+        // Todo NPC tem animador, mesmo parado — é o que permite virar de frente
+        // pro jogador (LockFacing) ao iniciar uma fala, e anima quem tem NpcPatrol.
+        var anim = go.AddComponent<SpriteWalkAnimator>();
+        anim.frames = frames;
+        anim.framesPerSecond = 8f;
 
         var trigger = go.AddComponent<CircleCollider2D>();
         trigger.isTrigger = true;
@@ -1013,6 +1398,62 @@ public static class TopDownSceneBuilder
         npc.npcName = displayName;
         npc.npcId = npcId;
         npc.lines = lines;
+        return npc;
+    }
+
+    /// <summary>
+    /// NPC de ambiente (papo simples, sem ligação com a quest principal): fala
+    /// algumas linhas e, opcionalmente, faz uma pergunta A/B só de flavor (sem
+    /// afetar nota/estresse) e/ou anda (patrol de ida-e-volta ou área livre).
+    /// </summary>
+    private static NpcInteractable CreateAmbientNpc(Transform parent, string spriteFile, Vector2 pos,
+        string displayName, string npcId, string[] lines, Vector2? patrolDir = null, float patrolAreaSize = 0f,
+        string choiceQuestion = null, string optionA = null, string optionB = null,
+        string replyA = null, string replyB = null,
+        int[] downFrames = null, int[] sideFrames = null, int[] upFrames = null,
+        int downIdle = 8, int sideIdle = 10, int upIdle = 9, bool invertSide = false,
+        float scale = 1f)
+    {
+        var npc = CreateNpc(parent, "NPC_" + displayName, CharsFolder + "/" + spriteFile, pos, displayName, npcId, lines);
+        if (!Mathf.Approximately(scale, 1f))
+            npc.transform.localScale = new Vector3(scale, scale, 1f);
+
+        if (choiceQuestion != null)
+        {
+            npc.hasChoice = true;
+            npc.choiceQuestion = choiceQuestion;
+            npc.choiceOptionA = optionA;
+            npc.choiceOptionB = optionB;
+            npc.choiceReplyA = replyA;
+            npc.choiceReplyB = replyB;
+        }
+
+        // CreateNpc já deixou um SpriteWalkAnimator pronto (parado); aqui só
+        // sobrescrevemos os índices de pose se a folha não seguir a convenção
+        // humana padrão (ex.: o cachorro).
+        var anim = npc.GetComponent<SpriteWalkAnimator>();
+        if (downFrames != null) anim.downFrames = downFrames;
+        if (sideFrames != null) anim.sideFrames = sideFrames;
+        if (upFrames != null) anim.upFrames = upFrames;
+        anim.downIdle = downIdle;
+        anim.sideIdle = sideIdle;
+        anim.upIdle = upIdle;
+        anim.invertSide = invertSide;
+
+        if (patrolDir.HasValue)
+        {
+            var patrol = npc.gameObject.AddComponent<NpcPatrol>();
+            patrol.mode = NpcPatrol.Mode.BackAndForth;
+            patrol.direction = patrolDir.Value;
+        }
+        else if (patrolAreaSize > 0f)
+        {
+            var patrol = npc.gameObject.AddComponent<NpcPatrol>();
+            patrol.mode = NpcPatrol.Mode.RandomArea;
+            patrol.areaSize = patrolAreaSize;
+        }
+
+        return npc;
     }
 
     private static void SetupHud()

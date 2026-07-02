@@ -60,12 +60,17 @@ de remontar.**
 ### Imagens (artes)
 | Arquivo | O que é |
 |---|---|
-| `Assets/Art/Campus/bloco1_ext.png` | **Exterior** do Bloco 1 (perspectiva, no campus) |
-| `Assets/Art/Campus/bloco2_ext.png` | **Exterior** do Bloco 2 |
-| `Assets/Art/Campus/bloco34_ext.png` | **Exterior** dos Blocos 3 e 4 (mesma arte) |
+| `Assets/Art/Campus/bloco1_ext.png` | **Exterior** do Bloco 1 (perspectiva, no campus). Recortada/reposicionada em 02/07/2026 a partir de `BLOCO 1.png` (correção de estilo) — mesmo tamanho de canvas (1122×1402) e mesma âncora inferior de antes, só a largura do conteúdo mudou |
+| `Assets/Art/Campus/bloco2_ext.png` | **Exterior** do Bloco 2. Mesmo tratamento de `bloco1_ext.png`, a partir de `BLOCO 2.png` |
+| `Assets/Art/Campus/bloco34_ext.png` | **Exterior** dos Blocos 3 e 4 (mesma arte). Mesmo tratamento, a partir de `BLOCO 3 E 4.png` |
 | `Assets/Art/Campus/ru_ext.png` | **Exterior** do R.U. (visto de lado) |
+| `Assets/Art/Campus/convivencia_ext.png` | **Exterior** da Convivência (prédio coberto + deck/escada + jardim). **Quadrada** (1254×1254) — diferente dos blocos/RU, que são 1122×1402 |
 | `Assets/Art/Campus/bloco_pixel.png` | **Interior** do bloco (corredor visto de cima, com 6 portas) |
 | `Assets/Art/Campus/ru_pixel.png` | **Interior** do R.U. (refeitório visto de cima) |
+| `Assets/Art/Campus/ac_interno.png` | **Interior** da Convivência (mesa de pingpong, mesas, balcão de lanches). Já vem **cortada** — o arquivo original (`AC_INTERNO.png`, na raiz do projeto) tinha uma borda quadriculada ao redor que foi removida |
+| `Assets/Art/Campus/sala_aula.png` | **Interior** da sala de aula (paredes, lousa, mesa do professor e 12 carteiras já desenhadas). Já vem **cortada** a partir de `SALA DE AULA.png` (718×857) — só a porta (embaixo, centralizada) é passável, o resto da borda é parede sólida |
+| `Assets/Art/Env/caminho_entrada.png` | **Passarela** entre a Guarita e a Convivência (jardim com cerca/bancos). Já vem cortada — 340×1024, só o passeio central (~41-62% da largura) é caminhável, as laterais têm colisão |
+| `Assets/Art/Env/caminho_bloco.png` | **Estrada em H** que liga os 4 blocos (chão só, sem colisão — totalmente caminhável por cima). Já vem cortada — 804×708 |
 | `Assets/Art/Env/grass_tile.png` | Textura de **grama** que se repete pelo chão |
 | `Assets/Art/Env/bush.png` | Arbusto (vegetação) |
 | `Assets/Art/Env/tree.png` | Árvore (vegetação) |
@@ -78,6 +83,8 @@ de remontar.**
 | `Assets/Scripts/BuildingDoor.cs` | A **porta**: mostra "Aperte E para entrar" e dispara a troca de tela. |
 | `Assets/Scripts/RoomExit.cs` | O **tapete de saída**: ao pisar, volta para a tela anterior. |
 | `Assets/Scripts/NpcInteractable.cs` | Personagem com quem se conversa (ex.: Natan). |
+| `Assets/Editor/PingPongSceneBuilder.cs` | Cria a cena `PingPongMinigame` (o minigame do Vitim) e a registra nos Build Settings. |
+| `Assets/Scripts/VitimPingPongTrigger.cs` / `PingPongGameController.cs` / `PingPongSession.cs` | O minigame de pingue-pongue com o Vitim (ver seção 5, "O minigame de pingue-pongue"). |
 
 ---
 
@@ -92,12 +99,28 @@ CAMPUS (exterior)  →  [entra pela porta]  →  INTERIOR DO R.U. (refeitório, 
 
 - No **campus** você vê o prédio **por fora** (as artes `*_ext.png`). Ele é sólido:
   você não atravessa.
-- Ao chegar na **porta** (na base do prédio) aparece **"Aperte E para entrar"**.
+- Ao chegar na **porta sul** (na base do prédio) aparece **"Aperte E para entrar"**.
   Apertando **E**, a tela **troca** para o interior.
 - Dentro do bloco você anda pelo **corredor** (`bloco_pixel.png`). As **3 portas do
   lado direito** levam, cada uma, a uma **sala de aula**.
-- Para **voltar**, pise no **tapete verde** perto da entrada — ele te devolve para a
-  tela anterior (a sala volta ao corredor; o corredor volta ao campus).
+- Para **voltar**, pise no **tapete verde** perto da entrada sul — ele te devolve
+  para a tela anterior (a sala volta ao corredor; o corredor volta ao campus).
+
+### Os Blocos 1-4 funcionam como TÚNEL (dois lados)
+
+Os 4 blocos didáticos têm também um **tapete de saída no topo do corredor** (lado
+norte), sem parede fechando aquele lado. Isso permite atravessar o prédio:
+
+- **Bloco 1 e 2:** só têm porta de **entrada ao sul**, mas o corredor tem **saída
+  também ao norte** — ou seja, dá pra entrar pela porta de baixo e sair pelo topo,
+  chegando do outro lado do prédio (sem porta visível ali, só o vão/tapete).
+- **Bloco 3 e 4:** têm **porta dos dois lados** (sul e norte) — sem sprite de porta
+  no lado norte, mas o gatilho de "Aperte E" funciona igual. Dá pra entrar por
+  qualquer lado e sair por qualquer lado.
+- Cada tapete (sul/norte) sempre leva para o lado de fora **correspondente** do
+  prédio (sul → frente sul; norte → frente norte), **não importa por qual porta
+  você entrou** — é o `RoomExit.overridePosition`, ajustado no montador via
+  `BlocoFrontPositions`.
 
 Tudo isso é montado pelas funções do arquivo `TopDownSceneBuilder.cs`. Abaixo, como
 mexer em cada parte.
@@ -145,6 +168,73 @@ BuildRUBuilding(root, "RU (007)", new Vector2(-22f, 2f), 22f,
 
 Mesma lógica dos blocos. O R.U. é **largo**, por isso a altura é `22f` (parece maior,
 mas por ser deitado ele fica baixo e comprido).
+
+### A Convivência
+
+A Convivência tem uma parte **aberta** (deck, escada, jardim — onde o jogador
+**nasce** e o Coordenador fica parado) e uma parte **coberta**, que agora tem
+**interior próprio** (`ac_interno.png`: mesa de pingpong, mesas, balcão de
+lanches). Procure pelo comentário **`005 — Convivência`**:
+
+```csharp
+private static readonly Vector2 ConvCenter = new Vector2(-7f, 2f);
+private const float ConvCanvas = 14f;
+```
+
+- **`ConvCenter`**: centro do prédio no campus (igual à posição dos blocos).
+- **`ConvCanvas`**: tamanho do canvas. Como a arte (`convivencia_ext.png`) é
+  **quadrada** (1254×1254), aqui só existe **um** número — vira altura **e**
+  largura ao mesmo tempo (nos blocos/RU a largura é `altura × 0.8`, porque a arte
+  deles é retangular).
+- Só a parte **coberta** (telhado + parede, medida como `0.33`–`0.86` horizontal e
+  `0.151`–`0.522` vertical da arte) tem colisão sólida. O **deck, a escada e o
+  jardim continuam caminháveis** — é ali que `SpawnPos` e `PosCoordenador` ficam.
+  Se mover `ConvCenter`/`ConvCanvas`, mova `SpawnPos`/`PosCoordenador` junto (estão
+  logo no topo do arquivo) para eles continuarem no deck, não dentro do prédio.
+
+#### Interior da Convivência — as 4 portas
+
+Diferente dos blocos (só entrada/saída ao sul e ao norte), o prédio coberto da
+Convivência tem uma porta em **cada um dos 4 lados** (norte, sul, leste, oeste).
+Entrar por um lado te leva pro **lado correspondente de dentro**, e sair te devolve
+pro **mesmo lado de fora** — não é um atalho de um lado pro outro, como nos blocos.
+
+Isso é montado pela função `BuildConvivenciaInterior` (procure por ela em
+`TopDownSceneBuilder.cs`). Pontos importantes:
+
+- O salão (`ac_interno.png`) é uma arte **única** de 26×26 unidades — sem paredes
+  internas, só os móveis têm colisão (mesa de pingpong, as 4 mesas, os 2 balcões).
+- Cada lado tem um **tapete de saída** (`AC_ExitNorte/Sul/Leste/Oeste`) que sempre
+  volta pro lado de fora certo, e um **ponto de entrada** um pouco mais pra dentro
+  do salão (pra não sair de novo assim que entra).
+- **Vitim** fica parado na frente da mesa de pingpong (não anda mais no Bloco 2).
+
+> ⚠️ Os móveis ocupam boa parte do salão — se adicionar algo novo ali, meça a
+> posição na arte (fração do canvas, 0 a 1) antes de decidir onde abrir passagem,
+> senão a saída pode nascer em cima de um móvel.
+
+#### O minigame de pingue-pongue com o Vitim
+
+Ao aceitar o convite dele ("Bora, to dentro!"), o jogador e o Vitim andam
+sozinhos até os lados opostos da mesa e a tela troca para uma **cena separada**
+(`Assets/Scenes/PingPongMinigame.unity`), carregada via `SceneManager.LoadScene`.
+Ao fim da partida (7 pontos ou 4 de vantagem), volta pro mesmo lugar da
+Convivência de onde saiu.
+
+- `VitimPingPongTrigger` fica no próprio Vitim: anda os dois bonecos até a mesa
+  e guarda em `PingPongSession` (uma classe estática só de handoff entre cenas —
+  não é progresso do jogo) tudo que precisa pra voltar igual: posição, limites da
+  câmera e escala do jogador.
+- `PingPongGameController` fica sozinho na cena `PingPongMinigame` e **monta a
+  própria arena e UI em código** (igual o `DialogueManager` monta a caixa de
+  diálogo) — não depende de nada pré-configurado na cena.
+- Ao voltar, o `InteriorController` lê o `PingPongSession` e reabre a Convivência
+  no ponto exato de onde o jogador saiu.
+- Essa cena precisa estar cadastrada em **File → Build Settings** pra o
+  `SceneManager` achar pelo nome — rode **Tools → Calouro → Montar Cena do
+  Pingue-Pongue** se ela sumir de lá ou for apagada.
+- É conteúdo opcional (registrado no roadmap como o primeiro item a cortar se
+  faltar tempo) — não afeta notas, estresse ou os finais.
 
 > ⚠️ **Cuidado ao mover prédios:** se dois prédios ficarem muito perto, podem se
 > sobrepor. Depois de mexer, sempre remonte (item 1) e olhe no Play.
@@ -313,8 +403,11 @@ ajustar — ele guarda uma "pilha" de telas para saber para onde voltar quando v
 sai. Graças a ele funciona **campus → bloco → sala** e a volta em ordem.
 
 ### `RoomExit` (o tapete de saída)
-Fica nos objetos `CExit_...` / `RExit_...`. Não tem propriedades: **ao pisar**, volta
-para a tela anterior.
+Fica nos objetos `CExit_...` / `CExitTop_...` / `RExit_...`.
+| Propriedade | Significado |
+|---|---|
+| **Use Override Position** | Se desmarcado (padrão), **ao pisar** volta para onde você entrou (tela anterior). Se marcado, ignora isso e sempre sai em **Override Position** |
+| **Override Position** | Posição fixa de saída (só usada se Use Override Position estiver marcado) — é assim que os tapetes sul/norte dos Blocos 1-4 sempre saem no lado certo do prédio, mesmo entrando pelo lado oposto |
 
 ### `NpcInteractable` (personagens, ex.: Natan, Coordenador)
 | Propriedade | Significado |
@@ -322,6 +415,21 @@ para a tela anterior.
 | **Npc Name** | Nome exibido no diálogo |
 | **Npc Id** | Identificador usado pela missão (`natan`, `coordenador`) |
 | **Lines** | As falas, uma por linha |
+| **Has Choice** / **Choice...** | Pergunta A/B opcional de flavor ao fim da fala (sem afetar nota/estresse), usada pelos NPCs de ambiente |
+
+Todo NPC também tem um `SpriteWalkAnimator` (mesmo os que não andam) — é o que
+permite ele **virar de frente pra direção real de onde o jogador está** (cima,
+baixo ou lado) assim que a conversa começa, e travar naquela pose até a fala
+acabar. Quem tem `NpcPatrol` (anda sozinho) pausa automaticamente durante a
+conversa e retoma de onde parou ao terminar — isso é tudo automático, controlado
+pelo `DialogueManager`, não precisa configurar nada por NPC.
+
+### `NpcPatrol` (NPC que anda sozinho)
+| Propriedade | Significado |
+|---|---|
+| **Mode** | `BackAndForth` (anda alguns passos numa direção fixa e volta) ou `RandomArea` (fica escolhendo um ponto aleatório dentro de um quadrado e indo até lá) |
+| **Direction** / **Step Distance** / **Steps** | (modo BackAndForth) direção, tamanho de cada passo e quantos passos antes de voltar |
+| **Area Size** | (modo RandomArea) lado do quadrado (em unidades) ao redor de onde o NPC nasceu — ex.: `10` = área de 10×10 |
 
 ---
 
@@ -367,6 +475,9 @@ correspondente em `ScatterFoliage`. Ajuste o `Block(...)` daquele prédio.
   Point, sem desfoque).
 - **Vegetação** (árvores/arbustos) espalhada em grupos pelo gramado, evitando prédios
   e caminhos.
+- **Minigame de pingue-pongue com o Vitim** (expansão de escopo consciente, ver
+  `roadmap-v2.md` 3.7B): cena própria (`PingPongMinigame.unity`), carregada e
+  descarregada via `SceneManager` a partir da Convivência.
 
 ---
 
