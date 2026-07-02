@@ -251,6 +251,11 @@ public class PingPongGameController : MonoBehaviour
             ? "Você venceu o Vitim no ping pong!"
             : "O Vitim levou essa... tenta de novo outra hora!");
         yield return new WaitForSeconds(2.6f);
+
+        // Sinaliza pro QuestManager (ao recarregar a SampleScene) que a partida
+        // aconteceu, pra dar o prêmio social e concluir a missão do ping-pong.
+        PingPongSession.MatchPlayed = true;
+        PingPongSession.PlayerWon = playerWon;
         SceneManager.LoadScene("SampleScene");
     }
 

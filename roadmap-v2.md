@@ -70,7 +70,7 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 | **Denúncia do veterano** | Nova cena de decisão no **Arco 1, logo após o trote**: um veterano exagera com outro calouro; o jogador escolhe [A] Denunciar na Direção (2º andar do Bloco Administrativo) → `veterano_denunciado` (sem dicas no Arco 4, +0.5 Ética) ou [B] Não se envolver (sem efeito) |
 | **Pausa** | ESC abre **painel de pausa** que pausa o jogo (`Time.timeScale = 0`): caderneta integrada + botões Continuar / Volume (slider) / Salvar / Voltar ao Título |
 | Cutscenes | Tela estática + texto avançando, via overlay de Canvas na própria cena (reaproveita o estilo do `DialogueManager`) |
-| Criação de personagem | Só nome (já existe). Aparência fixa |
+| Criação de personagem | Nome + **escolha de personagem na tela de título: calouro (homem) ou caloura (mulher)** — só essas duas opções, sem customização além disso (decisão do time em 02/07/2026, substitui o "aparência fixa" anterior). Folhas 6x4 `calouro.png`/`caloura.png`; a escolha vive em `GameProgress.PlayerCharacter` e é aplicada pelo `PlayerAppearance` |
 | Aula pulada / café | Contador `AulasPuladas`; 2+ → −0.5 em todas as notas no Arco 4 |
 | Documentos de design | GDD e Narrativa devem ser copiados para `docs/` no repositório (tarefa 3.20) |
 

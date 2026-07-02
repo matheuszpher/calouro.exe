@@ -103,6 +103,28 @@ public class InteriorController : MonoBehaviour
         Teleport(pos);
     }
 
+    /// <summary>
+    /// Sai de TODOS os interiores de uma vez e teleporta o jogador para o campus,
+    /// restaurando os limites de câmera do campus (o estado guardado no fundo da
+    /// pilha). Usado pela transição de dia / time skip, que teleporta direto sem
+    /// passar pelos tapetes de saída. Funciona mesmo já estando no campus.
+    /// </summary>
+    public void ForceCampus(Vector3 pos)
+    {
+        EnsureRefs();
+        LocState baseState = default;
+        bool had = false;
+        while (stack.Count > 0) { baseState = stack.Pop(); had = true; }
+        if (had && cam != null)
+        {
+            cam.boundsMin = baseState.boundsMin;
+            cam.boundsMax = baseState.boundsMax;
+            cam.useBounds = baseState.useBounds;
+        }
+        if (player != null) player.transform.localScale = Vector3.one;
+        Teleport(pos);
+    }
+
     private void Teleport(Vector3 pos)
     {
         if (player == null) EnsureRefs();

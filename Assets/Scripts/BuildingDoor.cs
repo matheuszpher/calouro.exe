@@ -58,6 +58,11 @@ public class BuildingDoor : MonoBehaviour
                 return;
             }
 
+            // Entrar na sala de aula certa pode concluir um objetivo (ex.: "Ir para
+            // a aula de IHC"). Portas comuns (classroomId vazio) não mexem no objetivo.
+            if (!string.IsNullOrEmpty(classroomId))
+                QuestManager.Instance?.OnEnteredRoom(classroomId);
+
             InteriorController.Instance?.EnterRoom(roomSpawn, returnPosition, roomBoundsMin, roomBoundsMax, playerScale);
         }
     }

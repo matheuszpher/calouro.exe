@@ -66,6 +66,9 @@ public class MazeController : MonoBehaviour
         if (timerText != null) timerText.gameObject.SetActive(false);
         Teleport(returnPos);
         ShowResult($"Prova de Matemática concluída!\nTempo: {timer:0.0}s   Nota: {grade:0.0}\n\n(Veja na caderneta — ESC)");
+
+        // Conclui o objetivo da prova de Matemática, se for o atual.
+        QuestManager.Instance?.ForceComplete("prova_mat");
     }
 
     private void Update()

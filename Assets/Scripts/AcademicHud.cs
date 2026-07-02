@@ -29,8 +29,6 @@ public class AcademicHud : MonoBehaviour
         "Matemática Básica",
         "Intro. à Engenharia de Software",
     };
-    private readonly float[] grades = { -1f, -1f, -1f, -1f, -1f }; // -1 = não avaliado
-
     private RectTransform stressFill;
     private Image stressFillImg;
     private GameObject caderneta;
@@ -56,10 +54,12 @@ public class AcademicHud : MonoBehaviour
         stress = Mathf.Clamp(stress + stressPerSecond * Time.deltaTime, 0f, maxStress);
         UpdateStressBar();
 
-        // ESC abre/fecha a caderneta (não durante diálogo nem na tela de fim).
+        // ESC abre/fecha a caderneta (não durante diálogo, cutscene de abertura,
+        // nem na tela de fim). Na abertura o ESC é o "pular" da cutscene.
         var kb = Keyboard.current;
         if (kb != null && kb.escapeKey.wasPressedThisFrame
-            && !DialogueManager.IsActive && !QuestManager.IsGameOver && !TitleScreen.IsShowing)
+            && !DialogueManager.IsActive && !QuestManager.IsGameOver && !TitleScreen.IsShowing
+            && !CampusTourCutscene.Active && !DayTransition.Active && !ExamManager.Active)
         {
             SetCaderneta(!open);
         }
@@ -85,13 +85,25 @@ public class AcademicHud : MonoBehaviour
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("CADERNETA ACADÊMICA");
         sb.AppendLine($"Calouro: {GameProgress.PlayerName}");
-        sb.AppendLine($"Semana {week} / {totalWeeks}");
+        sb.AppendLine($"Dia {GameProgress.CurrentDay}  ·  Semana {week} / {totalWeeks}");
         sb.AppendLine($"Estresse: {Mathf.RoundToInt(stress)}%");
         sb.AppendLine();
+
+        string objetivo = QuestManager.Instance != null ? QuestManager.Instance.CurrentObjectiveTitle : "";
+        sb.AppendLine("Objetivo atual:");
+        sb.AppendLine("  " + (string.IsNullOrEmpty(objetivo) ? "—" : objetivo));
+        sb.AppendLine();
+
+        sb.AppendLine("NOTAS");
         for (int i = 0; i < disciplines.Length; i++)
         {
-            // Matemática Básica (índice 3) usa a nota da Prova-Labirinto.
-            float g = (i == 3) ? GameProgress.MathGrade : grades[i];
+            // Cada nota vem da sua fonte real (provas/interações).
+            // Ordem: 0 FUP, 1 IHC, 2 Ética, 3 Matemática, 4 IES.
+            float g = i == 0 ? GameProgress.FupGrade
+                    : i == 1 ? GameProgress.IhcGrade
+                    : i == 2 ? GameProgress.EthicsGrade
+                    : i == 3 ? GameProgress.MathGrade
+                    : GameProgress.IesGrade;
             string nota = g < 0f ? "—" : g.ToString("0.0");
             sb.AppendLine($"{disciplines[i]}:  {nota}");
         }

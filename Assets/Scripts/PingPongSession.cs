@@ -10,6 +10,14 @@ using UnityEngine;
 public static class PingPongSession
 {
     public static bool Active;
+
+    /// <summary>Marcado ao terminar a partida; o QuestManager lê ao recarregar a
+    /// SampleScene pra dar o prêmio (Ética + alívio de estresse) e concluir a missão.</summary>
+    public static bool MatchPlayed;
+
+    /// <summary>Se o jogador venceu a última partida (flavor da mensagem de retorno).</summary>
+    public static bool PlayerWon;
+
     public static Vector3 ReturnSpawn;
     public static Vector3 ReturnFront;
     public static Vector2 RoomBoundsMin;

@@ -16,13 +16,24 @@ public class NpcInteractable : MonoBehaviour
     [TextArea(2, 5)]
     public string[] lines;
 
-    [Header("Escolha opcional ao fim da fala (flavor — sem efeito mecânico)")]
+    [Header("Escolha opcional ao fim da fala")]
     public bool hasChoice;
     public string choiceQuestion;
     public string choiceOptionA;
     public string choiceOptionB;
     [TextArea(1, 3)] public string choiceReplyA;
     [TextArea(1, 3)] public string choiceReplyB;
+
+    [Header("Recompensa de Ética por escolha (0 = sem efeito). Concedida uma vez.")]
+    public float ethicsRewardA = 0f;
+    public float ethicsRewardB = 0f;
+
+    [Header("Prova aplicada por este NPC (opcional)")]
+    [Tooltip("Se este objetivo estiver ativo, falar com o NPC aplica a prova em vez da fala normal.")]
+    public string examObjective = "";
+    [Tooltip("Tipo de prova: ihc (nota fixa), ies (quiz) ou fup (montar solução).")]
+    public string examKind = "";
+    [TextArea(2, 5)] public string[] examLines;
 
     private void OnTriggerEnter2D(Collider2D other)
     {

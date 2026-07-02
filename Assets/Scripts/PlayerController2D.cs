@@ -27,9 +27,12 @@ public class PlayerController2D : MonoBehaviour
 
     private void Update()
     {
-        // Trava o movimento enquanto um diálogo estiver aberto, ou durante a
-        // cutscene de ir até a mesa de pingue-pongue (ver VitimPingPongTrigger).
-        input = (DialogueManager.IsActive || VitimPingPongTrigger.CutsceneActive) ? Vector2.zero : ReadInput();
+        // Trava o movimento enquanto um diálogo estiver aberto, durante a cutscene
+        // de ir até a mesa de pingue-pongue (ver VitimPingPongTrigger) ou durante o
+        // passeio de abertura pelo campus (CampusTourCutscene).
+        input = (DialogueManager.IsActive || VitimPingPongTrigger.CutsceneActive
+                 || CampusTourCutscene.Active || DayTransition.Active || ExamManager.Active)
+            ? Vector2.zero : ReadInput();
 
         // Normaliza para a diagonal não ser mais rápida.
         if (input.sqrMagnitude > 1f)

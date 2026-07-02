@@ -19,13 +19,24 @@ public static class TopDownSceneBuilder
 {
     private const string WhitePath = "Assets/Sprites/white.png";
     private const string CharsFolder = "Assets/Sprites/Characters";
-    private const string PlayerSpritePath = CharsFolder + "/matheus.png";
+    // Folhas do protagonista (escolhido na tela de título). Layout 6x4 (24 poses),
+    // diferente dos NPCs (4x3). Ver PlayerAppearance/SpriteWalkAnimator.
+    private const string CalouroSpritePath = CharsFolder + "/calouro.png";
+    private const string CalouraSpritePath = CharsFolder + "/caloura.png";
 
     private const int Cols = 4;
     private const int Rows = 3;
     private const float CharPixelsPerUnit = 100f;
-    // Pose usada por padrão no Player: linha de baixo, 1ª coluna = frente parado.
-    private const int DefaultFrame = 8;
+    // Pose padrão dos NPCs (folha 4x3): linha de baixo, 1ª coluna = frente parado.
+    private const int NpcDefaultFrame = 8;
+
+    // Folhas do jogador: grade 6x4 e maior resolução — PPU próprio para o
+    // personagem sair na mesma altura em tela que os NPCs.
+    private const int PlayerCols = 6;
+    private const int PlayerRows = 4;
+    private const float PlayerCharPixelsPerUnit = 140f;
+    // Pose usada por padrão no Player: linha de cima, 1ª coluna = frente parado.
+    private const int PlayerIdleFrame = 0;
 
     [MenuItem("Tools/Calouro/Montar Cena Top-Down")]
     public static void BuildScene()
@@ -59,6 +70,7 @@ public static class TopDownSceneBuilder
         SetupMaze(white);
         SetupInteriors();
         SetupTitle();
+        SetupCampusTour();
 
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
         Debug.Log("[Calouro] Campus provisório montado! Salve (Ctrl+S) e dê Play — a câmera segue o jogador (WASD/setas).");
@@ -74,18 +86,26 @@ public static class TopDownSceneBuilder
     private static void SliceAllCharacters()
     {
         foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { CharsFolder }))
-            SliceGrid(AssetDatabase.GUIDToAssetPath(guid), Cols, Rows);
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            // O protagonista (calouro/caloura) vem em folha 6x4 e resolução maior;
+            // os NPCs seguem o padrão 4x3.
+            if (path == CalouroSpritePath || path == CalouraSpritePath)
+                SliceGrid(path, PlayerCols, PlayerRows, PlayerCharPixelsPerUnit);
+            else
+                SliceGrid(path, Cols, Rows, CharPixelsPerUnit);
+        }
         AssetDatabase.Refresh();
     }
 
-    private static void SliceGrid(string path, int cols, int rows)
+    private static void SliceGrid(string path, int cols, int rows, float pixelsPerUnit)
     {
         var importer = AssetImporter.GetAtPath(path) as TextureImporter;
         if (importer == null) return;
 
         importer.textureType = TextureImporterType.Sprite;
         importer.spriteImportMode = SpriteImportMode.Multiple;
-        importer.spritePixelsPerUnit = CharPixelsPerUnit;
+        importer.spritePixelsPerUnit = pixelsPerUnit;
         importer.isReadable = true; // preciso ler os pixels para achar as figuras
         importer.SaveAndReimport();
 
@@ -297,10 +317,11 @@ public static class TopDownSceneBuilder
     private const float WallT = 0.6f;
 
     // Posições-chave (compartilhadas entre os montadores).
-    // Convivência (005): SpawnPos/PosCoordenador ficam no deck/escada da arte
-    // (abaixo do prédio coberto — ver ConvCenter/ConvCanvas), não dentro dele.
-    private static readonly Vector3 SpawnPos = new Vector3(-5f, -1.8f, 0f);
-    private static readonly Vector2 PosCoordenador = new Vector2(-5f, 0f);
+    // O jogador começa na passarela logo depois da Guarita (entrada do campus).
+    private static readonly Vector3 SpawnPos = new Vector3(-6f, 18.5f, 0f);
+    // O Coordenador (Jeferson) começa no FIM da passarela, antes da Convivência —
+    // dali ele sobe até o calouro na abertura do Dia 1 (ver CampusTourCutscene).
+    private static readonly Vector2 PosCoordenador = new Vector2(-6f, 8.5f);
     private static readonly Vector2 ConvCenter = new Vector2(-7f, 2f);
     private const float ConvCanvas = 14f; // convivencia_ext.png é quadrada (1254x1254)
     private static readonly Vector2 PosBloco1 = new Vector2(2f, 10f);      // Bloco 1 (001)
@@ -329,6 +350,8 @@ public static class TopDownSceneBuilder
     private const string RUExtPath = "Assets/Art/Campus/ru_ext.png";
     // Convivência é quadrada (1254x1254, aspect 1.0), diferente dos blocos/RU (0.8).
     private const string ConvivenciaExtPath = "Assets/Art/Campus/convivencia_ext.png";
+    // Guarita (entrada) — arte quadrada 1254x1254; conteúdo em (0.266,0.148)-(0.727,0.738).
+    private const string GuaritaExtPath = "Assets/Art/Campus/guarita.png";
     private const string GrassTilePath = "Assets/Art/Env/grass_tile.png";
     private const string BushPath = "Assets/Art/Env/bush.png";
     private const string TreePath = "Assets/Art/Env/tree.png";
@@ -432,8 +455,31 @@ public static class TopDownSceneBuilder
 
         var roofServico = new Color(0.42f, 0.48f, 0.30f);   // telhado serviço (verde)
 
-        // 006 — Guarita (entrada) — prédio pequeno coberto, sem interior.
-        CoveredBlock(root, "GUARITA (006)", new Vector2(-6f, 22f), new Vector2(5f, 4f), roofServico, 'S', false);
+        // 006 — Guarita (entrada) — arte TOP-DOWN (guarita.png: bicicletário + guarita
+        // e piso), sem interior. Fica no TOPO da passarela: a base da guarita (y≈21.9)
+        // encosta no topo da passarela (entradaTop=22) — a imagem da guarita termina
+        // onde a passarela começa. Deslocada pra esquerda (x=-6.6) pra a ENTRADA (no
+        // lado direito da arte) alinhar com a passarela (x=-6). O jogador entra pelo sul
+        // (spawn em y=18.5) e a colisão fica só na parte sólida de cima (fundo/booth).
+        Vector2 guaritaCenter = new Vector2(-7f, 24.15f);
+        const float guaritaCanvas = 9.5f;
+        Sprite guaritaArt = GetEnvSprite(GuaritaExtPath, 100f, repeat: false);
+        if (guaritaArt != null)
+        {
+            StretchedSprite(root, "Ext_Guarita", guaritaCenter, new Vector2(guaritaCanvas, guaritaCanvas), guaritaArt, 3, Color.white);
+
+            // Colisão só no terço de cima do conteúdo (fração 0.148–0.42 na arte).
+            float gcl = guaritaCenter.x + (0.266f - 0.5f) * guaritaCanvas;
+            float gcr = guaritaCenter.x + (0.727f - 0.5f) * guaritaCanvas;
+            float gctop = guaritaCenter.y + (0.5f - 0.148f) * guaritaCanvas;
+            float gcbot = guaritaCenter.y + (0.5f - 0.42f) * guaritaCanvas;
+            CreateQuad(root, "GuaritaCol", new Vector2((gcl + gcr) / 2f, (gcbot + gctop) / 2f),
+                new Vector2(gcr - gcl, gctop - gcbot), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+        }
+        else
+        {
+            CoveredBlock(root, "GUARITA (006)", new Vector2(-6f, 22f), new Vector2(5f, 4f), roofServico, 'S', false);
+        }
 
         // 007 — RU: exterior (lateral) no campus; entrar faz TRANSIÇÃO de tela para
         // o refeitório (ru_pixel), onde está o Natan.
@@ -932,23 +978,23 @@ public static class TopDownSceneBuilder
                     "Eu ainda me perco tentando achar o Bloco 4.",
                 },
                 patrolDir: Vector2.up,
-                choiceQuestion: "Quer que eu te dê uma dica de atalho?",
-                optionA: "Quero sim!", optionB: "Vou explorar sozinho.",
-                replyA: "Os corredores dos blocos se conectam por dentro — economiza um tempão.",
-                replyB: "Beleza, boa exploração então!",
-                scale: 1.6f);
+                choiceQuestion: "Ela te pede uma ajuda com a lista de FUP. Você ajuda?",
+                optionA: "Claro, bora ver isso.", optionB: "Agora não, tô sem tempo.",
+                replyA: "Aê! Você me salvou. Depois te pago um café.",
+                replyB: "Tranquilo, depois eu tento de novo. Valeu mesmo assim!",
+                scale: 1.6f, ethicsRewardA: 1.0f, ethicsRewardB: 0f);
         else if (label == "BLOCO 4 (004)")
             CreateAmbientNpc(interiorsRoot, "enzo.png", new Vector2(c.x, c.y), "Enzo", "enzo",
                 new[]
                 {
-                    "E aí! Bloco 4 também tem uma vibe boa, não é?",
-                    "Fico por aqui entre uma aula e outra.",
+                    "E aí! Sou o Enzo, do Bloco 4.",
+                    "Perdi a aula de ontem e tô sem o material... tava vendo se alguém me empresta as anotações.",
                 },
-                choiceQuestion: "Já fez algum amigo na turma?",
-                optionA: "Já, sim!", optionB: "Ainda não, sou meio tímido.",
-                replyA: "Que ótimo! Isso ajuda muito a segurar a barra do semestre.",
-                replyB: "Relaxa, todo mundo tá igual no início. Vai rolar.",
-                scale: 1.6f);
+                choiceQuestion: "Você empresta suas anotações pro Enzo?",
+                optionA: "Claro, te mando tudo hoje!", optionB: "Ah, eu ainda preciso delas.",
+                replyA: "Mano, salvou demais! Semana que vem eu te retribuo.",
+                replyB: "Sem problema, eu me viro. Valeu mesmo assim!",
+                scale: 1.6f, ethicsRewardA: 1.0f, ethicsRewardB: 0f);
 
         // 3 portas do lado direito → salas de aula.
         float[] dy = { 0.307f, 0.0185f, -0.326f };
@@ -961,28 +1007,90 @@ public static class TopDownSceneBuilder
             // Rainara (professora de IHC) fica na Sala 1 do Bloco 1 — é a ÚNICA
             // sala liberada por enquanto (ClassSchedule.CurrentRoomId). As outras
             // mostram um "pensamento" de sala errada em vez de abrir (ver BuildingDoor).
+            // Professores das aulas do Dia 1. A sala liberada de cada momento é
+            // controlada em runtime pelo sistema de objetivos (ver QuestManager /
+            // ClassSchedule); a atribuição de edição abaixo é só um valor inicial.
+            // Personagens em 1.6x (arte da sala é "de perto").
             if (label == "BLOCO 1 (001)" && i == 0)
             {
                 ClassSchedule.CurrentRoomId = salaLabel;
                 ClassSchedule.CurrentRoomLabel = "IHC com a Rainara (Bloco 1, Sala 1)";
 
-                // Em pé no vão livre entre a mesa do professor e a 1ª fileira de
-                // carteiras (não sentada — a arte só tem a cadeira vazia atrás da
-                // mesa, ficar ali dava a impressão de estar em cima da mesa).
-                // Escala maior (1.6x), mesmo motivo da Convivência: a arte da sala
-                // é "de perto" e os personagens ficam pequenos no tamanho normal.
                 float rx = (sbmin.x + sbmax.x) / 2f;
                 CreateAmbientNpc(interiorsRoot, "rainara.png", new Vector2(rx, sbmax.y - 6f), "Rainara", "rainara",
                     new[]
                     {
-                        "Ah, um calouro por aqui! Bem-vindo à sala de IHC.",
-                        "Interação Humano-Computador é entender como as pessoas usam a tecnologia — não só programar, mas pensar em quem vai usar.",
+                        "Ah, você é o novo calouro! Bem-vindo à aula de Interação Humano-Computador.",
+                        "O resumo de hoje é simples: IHC é pensar em QUEM vai usar o sistema — não só em fazer funcionar.",
+                        "Boa aula! E não perca a próxima: você tem Matemática Básica agora, com o professor Aragão, no Bloco 2, Sala 1.",
                     },
                     choiceQuestion: "Já pensou em como isso vai te ajudar no curso?",
                     optionA: "Parece interessante!", optionB: "Ainda não sei bem o que esperar.",
                     replyA: "Ótimo! Você vai gostar das aulas, então.",
                     replyB: "Sem pressa — isso fica mais claro com o tempo. Bons estudos!",
+                    scale: 1.6f,
+                    examObjective: "prova_ihc", examKind: "ihc",
+                    examLines: new[]
+                    {
+                        "Semanas se passaram e chegou a hora da avaliação de IHC.",
+                        "Como a nossa disciplina é mais de reflexão, avaliei sua participação e as discussões em aula.",
+                        "Pronto: sua nota de IHC já está registrada. Mandou bem!",
+                    });
+            }
+            else if (label == "BLOCO 2 (002)" && i == 0)
+            {
+                float ax = (sbmin.x + sbmax.x) / 2f;
+                CreateAmbientNpc(interiorsRoot, "aragao.png", new Vector2(ax, sbmax.y - 6f), "Aragão", "aragao",
+                    new[]
+                    {
+                        "Bom dia! Eu sou o professor Aragão, de Matemática Básica.",
+                        "Não se assuste com o nome — a ideia é reforçar a base: lógica, frações, um pouco de raciocínio.",
+                        "Preste atenção nas listas: elas caem direto na prova — aquele nosso 'labirinto' no fim do módulo.",
+                    },
+                    choiceQuestion: "Matemática te dá um frio na barriga?",
+                    optionA: "Um pouco, confesso.", optionB: "Não, eu curto!",
+                    replyA: "Normal. Com prática melhora — e eu tô aqui pra isso.",
+                    replyB: "Ótimo! Então vai se dar bem no labirinto.",
                     scale: 1.6f);
+            }
+            else if (label == "BLOCO 3 (003)" && i == 0)
+            {
+                float px = (sbmin.x + sbmax.x) / 2f;
+                CreateAmbientNpc(interiorsRoot, "paulete.png", new Vector2(px, sbmax.y - 6f), "Paulete", "paulete",
+                    new[]
+                    {
+                        "Oi, calouro! Eu sou a professora Paulete, de Fundamentos da Programação.",
+                        "Aqui a gente aprende a pensar como um programador: dividir o problema em passos e resolver um de cada vez.",
+                        "Na avaliação você vai montar a solução de um probleminha — nada de decoreba, é raciocínio.",
+                    },
+                    choiceQuestion: "Já mexeu com programação antes?",
+                    optionA: "Só um pouquinho.", optionB: "Nunca, é tudo novo.",
+                    replyA: "Ótima base! A gente aprofunda daqui.",
+                    replyB: "Melhor ainda — sem vícios. Vai por mim, você pega rápido.",
+                    scale: 1.6f,
+                    examObjective: "prova_fup", examKind: "fup",
+                    examLines: new[]
+                    {
+                        "Hora da prova de Fundamentos da Programação!",
+                        "Vou te dar um probleminha: você monta a solução colocando os passos na ordem certa. Bora?",
+                    });
+            }
+            else if (label == "BLOCO 4 (004)" && i == 0)
+            {
+                float jx = (sbmin.x + sbmax.x) / 2f;
+                CreateAmbientNpc(interiorsRoot, "jeferson.png", new Vector2(jx, sbmax.y - 6f), "Jeferson", "jeferson_prova",
+                    new[]
+                    {
+                        "Opa! Além de coordenador, eu também sou professor de Introdução à Engenharia de Software.",
+                        "A prova de IES acontece aqui nesta sala, no período de avaliações.",
+                    },
+                    scale: 1.6f,
+                    examObjective: "prova_ies", examKind: "ies",
+                    examLines: new[]
+                    {
+                        "Chegou a prova de Introdução à Engenharia de Software!",
+                        "São algumas perguntas objetivas sobre os conceitos que a gente viu. Responde com calma.",
+                    });
             }
 
             var trig = new GameObject("SalaDoor_" + salaLabel);
@@ -998,6 +1106,12 @@ public static class TopDownSceneBuilder
             bd.roomBoundsMax = sbmax;
             bd.roomLabel = salaLabel;
             bd.classroomId = salaLabel;
+            // Salas com aula agendada usam o id-constante (mesma fonte que o objetivo
+            // usa), pra o gating casar sem risco de divergência de texto/traço.
+            if (label == "BLOCO 1 (001)" && i == 0) bd.classroomId = ClassSchedule.RoomIHC;
+            else if (label == "BLOCO 2 (002)" && i == 0) bd.classroomId = ClassSchedule.RoomAragao;
+            else if (label == "BLOCO 3 (003)" && i == 0) bd.classroomId = ClassSchedule.RoomFUP;
+            else if (label == "BLOCO 4 (004)" && i == 0) bd.classroomId = ClassSchedule.RoomIES;
             bd.playerScale = 1.6f; // mesma escala da Rainara — arte da sala é "de perto"
         }
 
@@ -1053,15 +1167,22 @@ public static class TopDownSceneBuilder
         mcol.isTrigger = true;
         mat.AddComponent<RoomExit>();
 
-        // Natan no salão, um pouco à frente da entrada.
-        CreateNpc(interiorsRoot, "NPC_Natan", CharsFolder + "/natan.png",
+        // Natan no salão, um pouco à frente da entrada. É a sessão de estudo do
+        // Dia 3 (objetivo "estudar_natan"): estudar junto dá +1.0 de Ética e leva
+        // ao salto temporal pras provas.
+        CreateAmbientNpc(interiorsRoot, "natan.png",
             new Vector2((gL + gR) / 2f, bottom + 5.0f), "Natan", "natan",
             new[]
             {
                 "E aí, calouro! Eu sou o Natan.",
-                "Bora sobreviver a esse primeiro semestre juntos.",
-                "Precisa de algo? É só me chamar.",
-            });
+                "As primeiras provas tão chegando... Matemática no labirinto, o quiz do Jeferson, aquele problema de FUP...",
+                "Tô montando um resumão aqui no RU. Cola comigo que a gente revisa junto.",
+            },
+            choiceQuestion: "Estudar em grupo pra reta final antes das provas?",
+            optionA: "Bora! Junto rende mais.", optionB: "Prefiro revisar sozinho.",
+            replyA: "Isso! Duas cabeças pensam melhor. Já já você tá afiado.",
+            replyB: "De boa, cada um no seu ritmo. Qualquer dúvida, tô aqui.",
+            ethicsRewardA: 1.0f, ethicsRewardB: 0f);
 
         Label(interiorsRoot, "REFEITÓRIO — " + label, new Vector2(c.x, top + 1.0f), new Color(0.96f, 0.96f, 0.88f));
         Vector3 spawn = new Vector3((gL + gR) / 2f, bottom + 3.0f, 0f);
@@ -1351,13 +1472,14 @@ public static class TopDownSceneBuilder
         var root = new GameObject("NPCs");
 
         // Natan agora fica DENTRO do RU (criado em BuildRUInterior).
+        // Falar com o Jeferson dispara a cutscene do passeio pelo campus (ver
+        // DialogueManager.EndDialogue + CampusTourCutscene). Por isso a fala aqui é
+        // só uma introdução curta que puxa o tour.
         CreateNpc(root.transform, "NPC_Coordenador", CharsFolder + "/jeferson.png", PosCoordenador, "Coordenador", "coordenador",
             new[]
             {
-                "Bem-vindo a Quixadá, calouro!",
-                "Sou o coordenador de Engenharia de Software.",
-                "Passe no RU e fale com o Natan — ele te mostra o campus.",
-                "Depois siga para o Bloco 1. Boa sorte no semestre!",
+                "Opa! Você deve ser o calouro novo. Eu sou o Jeferson, coordenador de Engenharia de Software.",
+                "Chegou na hora certa — deixa eu te mostrar o campus.",
             });
 
         // Batatinha (cachorro do campus) — no mato perto da Convivência. Só um "Au au!",
@@ -1370,6 +1492,44 @@ public static class TopDownSceneBuilder
             new[] { "Au au!" }, patrolAreaSize: 10f,
             downFrames: new[] { 0, 5 }, sideFrames: new[] { 2, 3 }, upFrames: new[] { 1, 6 },
             downIdle: 8, sideIdle: 11, upIdle: 9, invertSide: true);
+
+        // Alunos perambulando pelos caminhos que interligam os blocos (ambiente,
+        // sem quest). Andam em vaivém/roam sobre os trechos caminháveis — o miolo
+        // da estrada em H, as colunas entre os blocos e a rua norte — sempre longe
+        // dos colisores dos prédios (medidos: colunas livres em y∈(-1, 5.4), miolo
+        // do H livre em x∈(4, 11)). Falam no máximo uma linha.
+        // Matheus: além do papo de ambiente, é a interação ÉTICA do Dia 3 no campus
+        // (objetivo "ajudar_matheus"). Ajudar dá +1.0 de Ética (uma vez).
+        CreateAmbientNpc(root.transform, "matheus.png", new Vector2(6.5f, 2f), "Matheus", "aluno_matheus",
+            new[]
+            {
+                "E aí, calouro! Tudo certo pras provas?",
+                "Cara, tô travado num exercício de revisão e as provas são já já...",
+            },
+            patrolAreaSize: 4f,
+            choiceQuestion: "Você senta pra revisar o exercício junto com o Matheus?",
+            optionA: "Bora, a gente resolve isso.", optionB: "Foi mal, tô correndo agora.",
+            replyA: "Aê! Contigo junto fica bem mais tranquilo. Valeu!",
+            replyB: "De boa, depois eu tento sozinho. Bons estudos!",
+            ethicsRewardA: 1.0f, ethicsRewardB: 0f);
+        CreateAmbientNpc(root.transform, "paulete.png", new Vector2(3.5f, 17.4f), "Paulete", "aluno_paulete",
+            new[] { "Oi, tudo bem?" }, patrolDir: new Vector2(1f, 0f));
+
+        // Emilly: interação ÉTICA obrigatória do Dia 1 (objetivo "interacao_etica").
+        // Fica parada no deck da Convivência (fácil de achar). Ajudar dá +1.0 de
+        // Ética (uma vez); ignorar não dá nada. (aragao.png virou o professor Aragão,
+        // dentro do Bloco 2 — ver BuildBlocoInterior.)
+        CreateAmbientNpc(root.transform, "emilly.png", new Vector2(-3f, -1f), "Emilly", "emilly",
+            new[]
+            {
+                "Oi! Eu sou a Emilly, também sou caloura.",
+                "Cara, tô boiando numa lista de exercícios... tava vendo se alguém me dava uma luz.",
+            },
+            choiceQuestion: "Você para pra ajudar a Emilly com a lista?",
+            optionA: "Claro, bora resolver junto!", optionB: "Agora não dá, foi mal.",
+            replyA: "Sério? Valeu demais! Assim o primeiro dia fica bem melhor.",
+            replyB: "Ah... tranquilo, depois eu vejo. Boa aula!",
+            ethicsRewardA: 1.0f, ethicsRewardB: 0f);
     }
 
     private static NpcInteractable CreateNpc(Transform parent, string objName, string spritePath, Vector2 pos,
@@ -1381,7 +1541,7 @@ public static class TopDownSceneBuilder
 
         var frames = LoadFrames(spritePath);
         var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = frames.Length > DefaultFrame ? frames[DefaultFrame] : LoadFrame(spritePath, DefaultFrame);
+        sr.sprite = frames.Length > NpcDefaultFrame ? frames[NpcDefaultFrame] : LoadFrame(spritePath, NpcDefaultFrame);
         sr.sortingOrder = 5;
 
         // Todo NPC tem animador, mesmo parado — é o que permite virar de frente
@@ -1412,7 +1572,8 @@ public static class TopDownSceneBuilder
         string replyA = null, string replyB = null,
         int[] downFrames = null, int[] sideFrames = null, int[] upFrames = null,
         int downIdle = 8, int sideIdle = 10, int upIdle = 9, bool invertSide = false,
-        float scale = 1f)
+        float scale = 1f, float ethicsRewardA = 0f, float ethicsRewardB = 0f,
+        string examObjective = null, string examKind = null, string[] examLines = null)
     {
         var npc = CreateNpc(parent, "NPC_" + displayName, CharsFolder + "/" + spriteFile, pos, displayName, npcId, lines);
         if (!Mathf.Approximately(scale, 1f))
@@ -1426,6 +1587,15 @@ public static class TopDownSceneBuilder
             npc.choiceOptionB = optionB;
             npc.choiceReplyA = replyA;
             npc.choiceReplyB = replyB;
+            npc.ethicsRewardA = ethicsRewardA;
+            npc.ethicsRewardB = ethicsRewardB;
+        }
+
+        if (!string.IsNullOrEmpty(examObjective))
+        {
+            npc.examObjective = examObjective;
+            npc.examKind = examKind;
+            npc.examLines = examLines;
         }
 
         // CreateNpc já deixou um SpriteWalkAnimator pronto (parado); aqui só
@@ -1473,6 +1643,67 @@ public static class TopDownSceneBuilder
             go.AddComponent<TitleScreen>();
         }
     }
+
+    /// <summary>
+    /// Abertura do Dia 1 (roda sozinha após a tela de título): o Jeferson percebe o
+    /// calouro na passarela e sobe até ele, dá as boas-vindas, mostra o campus
+    /// (câmera passeia pelos pontos-chave), indica a 1ª aula e caminha até o
+    /// RU/administrativo. No fim, define o primeiro objetivo na HUD. Posições reusam
+    /// as constantes do campus.
+    /// </summary>
+    private static void SetupCampusTour()
+    {
+        var old = GameObject.Find("CampusTour");
+        if (old != null) Object.DestroyImmediate(old);
+
+        var go = new GameObject("CampusTour");
+        var tour = go.AddComponent<CampusTourCutscene>();
+        tour.tourOrthoSize = 6.5f;
+        tour.moveDuration = 1.2f;
+        tour.coordenadorWalkSpeed = 4.2f;
+        tour.coordenador = GameObject.Find("NPC_Coordenador");
+
+        // 1) Abordagem: o Jeferson sobe a passarela até perto do jogador (que nasce
+        //    na Guarita, y=18.5) e a câmera enquadra os dois.
+        tour.meetingFocus = new Vector2(-6f, 16.5f);
+        tour.approachTarget = new Vector2(-6f, 15.5f);
+        tour.welcomeLines = new[]
+        {
+            "Ei! Ei, calouro! Peraí!",
+            "Você tem cara de quem tá meio perdido, né? Relaxa, todo mundo começa assim. Eu sou o Jeferson, coordenador de Engenharia de Software.",
+            "Deixa eu te dar as boas-vindas e mostrar o campus rapidinho — assim você não se perde logo no primeiro dia.",
+        };
+
+        // 2) Passeio pelo campus.
+        tour.stops = new[]
+        {
+            TourStop(new Vector2(-6f, 1f), "Essa é a nossa Convivência — ponto de encontro entre uma aula e outra."),
+            TourStop(new Vector2(-22f, 2f), "Ali fica o RU, o Restaurante Universitário, coladinho no prédio administrativo. Comida barata e o Natan quase sempre por perto."),
+            TourStop(PosBloco1, "O Bloco 1 é onde ficam a maioria das salas — inclusive a da sua primeira aula."),
+            TourStop(new Vector2(13f, 10f), "Do lado, o Bloco 2, com mais salas e os laboratórios."),
+            TourStop(new Vector2(7.5f, -6f), "Lá embaixo, os Blocos 3 e 4. Projeto e prova vão te trazer bastante por aqui."),
+            TourStop(new Vector2(-9f, 24f), "E aquela é a Guarita, por onde você entrou. Vai cruzar por ela todo santo dia."),
+            TourStop(new Vector2(-6f, 1f), "É isso, {nome}. Sua primeira aula é de IHC, com a professora Rainara, no Bloco 1, Sala 1. Chega junto! Eu vou ali pro administrativo — qualquer coisa, me procura."),
+        };
+
+        // 3) O Jeferson vai até a porta do RU (007), que também é o administrativo,
+        //    e entra (some). A câmera acompanha. A rota desvia pelo corredor aberto a
+        //    OESTE da Convivência (x=-11, entre a Conv. em x≥-9.4 e o RU em x≤-13.6) e
+        //    chega à porta pelo sul (y=-1.7, abaixo do corpo do RU), sem atravessar
+        //    nenhum prédio.
+        tour.coordenadorExitPath = new[]
+        {
+            new Vector2(-11f, 15.5f),
+            new Vector2(-11f, -1.7f),
+            new Vector2(-21.9f, -1.7f),
+        };
+
+        // O primeiro objetivo é iniciado pelo próprio QuestManager ao fim da abertura
+        // (tour chama StartSequence) — não depende de nenhum id salvo aqui.
+    }
+
+    private static CampusTourCutscene.Stop TourStop(Vector2 focus, string line)
+        => new CampusTourCutscene.Stop { focus = focus, line = line };
 
     private static void SetupInteriors()
     {
@@ -1574,6 +1805,21 @@ public static class TopDownSceneBuilder
             go.AddComponent<QuestManager>();
         }
 
+        // Transição de fim de dia (tela preta "Dia N finalizado / Boa sorte no Dia
+        // N+1"). Reaparece o jogador na passarela da Guarita a cada novo dia.
+        var oldDt = GameObject.Find("DayTransition");
+        if (oldDt != null) Object.DestroyImmediate(oldDt);
+        var dtGO = new GameObject("DayTransition");
+        var dt = dtGO.AddComponent<DayTransition>();
+        dt.campusSpawn = SpawnPos;
+
+        // Provas interativas (quiz de IES / montar solução de FUP).
+        if (GameObject.Find("ExamManager") == null)
+        {
+            var exGO = new GameObject("ExamManager");
+            exGO.AddComponent<ExamManager>();
+        }
+
         var oldGoal = GameObject.Find("GoalZone");
         if (oldGoal != null) Object.DestroyImmediate(oldGoal);
 
@@ -1595,9 +1841,12 @@ public static class TopDownSceneBuilder
         }
         player.tag = "Player"; // necessário para os NPCs detectarem o jogador
 
+        var calouroFrames = LoadFrames(CalouroSpritePath);
+        var calouraFrames = LoadFrames(CalouraSpritePath);
+
         var sr = player.GetComponent<SpriteRenderer>();
         if (sr == null) sr = player.AddComponent<SpriteRenderer>();
-        sr.sprite = LoadFrame(PlayerSpritePath, DefaultFrame);
+        sr.sprite = calouroFrames.Length > PlayerIdleFrame ? calouroFrames[PlayerIdleFrame] : LoadFrame(CalouroSpritePath, PlayerIdleFrame);
         sr.sortingOrder = 10;
 
         player.transform.position = SpawnPos;
@@ -1605,16 +1854,24 @@ public static class TopDownSceneBuilder
         var pc = player.GetComponent<PlayerController2D>() ?? player.AddComponent<PlayerController2D>();
         pc.flipSprite = false; // o animador cuida do espelhamento por direção
 
-        // Animação direcional (poses por direção do movimento).
+        // Animação direcional (poses por direção do movimento). Layout 6x4 do
+        // protagonista — o PlayerAppearance reaplica isso ao trocar de personagem.
         var anim = player.GetComponent<SpriteWalkAnimator>() ?? player.AddComponent<SpriteWalkAnimator>();
-        anim.frames = LoadFrames(PlayerSpritePath);
-        anim.downFrames = new[] { 0, 1 };
-        anim.sideFrames = new[] { 5, 6 };
-        anim.upFrames = new[] { 9 };
-        anim.downIdle = 8;
-        anim.sideIdle = 10;
-        anim.upIdle = 9;
+        anim.frames = calouroFrames;
+        anim.downFrames = new[] { 3, 4, 5 };
+        anim.sideFrames = new[] { 9, 10, 11 };
+        anim.upFrames = new[] { 15, 16, 17 };
+        anim.downIdle = 0;
+        anim.sideIdle = 6;
+        anim.upIdle = 12;
+        anim.invertSide = true;   // as poses de lado encaram a direita
+        anim.swayWhenUp = false;  // há quadros reais de costas
         anim.framesPerSecond = 8f;
+
+        // Escolha do personagem (calouro/caloura) na tela de título.
+        var appearance = player.GetComponent<PlayerAppearance>() ?? player.AddComponent<PlayerAppearance>();
+        appearance.calouroFrames = calouroFrames;
+        appearance.calouraFrames = calouraFrames;
 
         var rb = player.GetComponent<Rigidbody2D>() ?? player.AddComponent<Rigidbody2D>();
         rb.bodyType = RigidbodyType2D.Dynamic;

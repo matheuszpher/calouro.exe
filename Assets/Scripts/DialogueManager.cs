@@ -23,6 +23,7 @@ public class DialogueManager : MonoBehaviour
     private int index;
     private NpcInteractable nearby;
     private NpcInteractable activeNpc;
+    private NpcInteractable examPending; // professor cuja prova roda ao fim da fala
     private bool choosing;
     private System.Action<int> choiceCallback;
 
@@ -52,6 +53,8 @@ public class DialogueManager : MonoBehaviour
     private void Update()
     {
         if (TitleScreen.IsShowing) return;
+        // Durante cutscene/transição/prova o E/clique é delas, não do diálogo.
+        if (CampusTourCutscene.Active || DayTransition.Active || ExamManager.Active) return;
 
         // Modo de escolha: responde com 1 ou 2.
         if (choosing)
@@ -78,7 +81,15 @@ public class DialogueManager : MonoBehaviour
         {
             activeNpc = nearby;
             SetNpcFacingPlayer(nearby);
-            StartDialogue(nearby.npcName, nearby.lines);
+            if (IsExamNow(nearby))
+            {
+                examPending = nearby;
+                StartDialogue(nearby.npcName, nearby.examLines);
+            }
+            else
+            {
+                StartDialogue(nearby.npcName, nearby.lines);
+            }
         }
     }
 
@@ -131,6 +142,16 @@ public class DialogueManager : MonoBehaviour
         if (npc != null && QuestManager.Instance != null)
             QuestManager.Instance.OnTalked(npc.npcId);
 
+        // Professor aplicando prova: ao fim da fala, dispara a avaliação (nota fixa,
+        // quiz ou montar-solução) em vez do fluxo normal de escolha.
+        if (examPending != null && examPending == npc)
+        {
+            var ep = examPending; examPending = null;
+            ResumeFacingNpc();
+            LaunchExam(ep);
+            return;
+        }
+
         // NPCs de ambiente podem ter uma escolha simples (flavor, sem flag/efeito)
         // configurada neles mesmos, independente da quest principal.
         if (npc != null && npc.hasChoice && !IsActive && !choosing)
@@ -148,6 +169,18 @@ public class DialogueManager : MonoBehaviour
                         return;
                     }
                 }
+
+                // Escolha moral que dá pontos de Ética (uma vez por NPC, com teto diário).
+                float reward = choice == 0 ? npc.ethicsRewardA : npc.ethicsRewardB;
+                string ethicsFlag = "etica_" + npc.npcId;
+                if (reward > 0f && !GameProgress.HasFlag(ethicsFlag))
+                {
+                    GameProgress.SetFlag(ethicsFlag);
+                    float granted = GameProgress.AddEthics(reward);
+                    QuestManager.Instance?.ShowMessage(
+                        granted > 0f ? $"Ética +{granted:0.0}" : "Você já atingiu o limite de Ética por hoje.");
+                }
+
                 string reply = choice == 0 ? npc.choiceReplyA : npc.choiceReplyB;
                 ShowFlavorReply(npc.npcName, reply);
             });
@@ -185,6 +218,42 @@ public class DialogueManager : MonoBehaviour
     /// diálogo, sem NPC nenhum envolvido.
     /// </summary>
     public void ShowThought(string text) => ShowFlavorReply("(pensando)", text);
+
+    /// <summary>Verdadeiro se falar com este NPC agora deve aplicar a prova dele.</summary>
+    private bool IsExamNow(NpcInteractable npc)
+    {
+        return npc != null && !string.IsNullOrEmpty(npc.examObjective)
+            && QuestManager.Instance != null && QuestManager.Instance.IsCurrent(npc.examObjective);
+    }
+
+    private void LaunchExam(NpcInteractable npc)
+    {
+        string obj = npc.examObjective;
+        switch (npc.examKind)
+        {
+            case "ihc": // nota constante entregue pela professora
+                GameProgress.IhcGrade = 8.0f;
+                QuestManager.Instance?.ShowMessage("Nota de IHC registrada: 8.0");
+                QuestManager.Instance?.ForceComplete(obj);
+                break;
+            case "ies": // quiz do Jeferson
+                ExamManager.Instance?.StartQuiz(g =>
+                {
+                    GameProgress.IesGrade = g;
+                    QuestManager.Instance?.ShowMessage($"Nota de IES: {g:0.0}");
+                    QuestManager.Instance?.ForceComplete(obj);
+                });
+                break;
+            case "fup": // montar a solução
+                ExamManager.Instance?.StartProblem(g =>
+                {
+                    GameProgress.FupGrade = g;
+                    QuestManager.Instance?.ShowMessage($"Nota de FUP: {g:0.0}");
+                    QuestManager.Instance?.ForceComplete(obj);
+                });
+                break;
+        }
+    }
 
     /// <summary>Mostra uma pergunta com duas opções (responder com 1 ou 2).</summary>
     public void StartChoice(string who, string question, string optionA, string optionB, System.Action<int> onChosen)

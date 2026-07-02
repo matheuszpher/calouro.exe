@@ -1,108 +1,420 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Controla o objetivo da demo ("O Primeiro Dia"):
-/// falar com o Coordenador → falar com o Natan (escolha) → chegar no Bloco 1.
-/// Mostra o objetivo atual na tela e a tela de "Fim da demo".
+/// Sistema sequencial de objetivos: só um objetivo fica ativo por vez, e concluir
+/// um ativa o próximo (o encadeamento é dado por cada objetivo). Concluir depende
+/// de uma condição (falar com um NPC, entrar numa sala, chegar numa zona), então
+/// ações fora de ordem simplesmente não avançam nada. Mostra o objetivo atual no
+/// canto superior esquerdo e um aviso curto ("Objetivo concluído!") ao completar.
+/// O objetivo atual sobrevive a trocas de cena via GameProgress.CurrentObjectiveId.
+///
+/// A lista de objetivos é fixa (conteúdo hardcoded, por decisão de escopo). Novos
+/// dias/aulas entram estendendo esta lista nas próximas etapas.
 /// </summary>
 public class QuestManager : MonoBehaviour
 {
     public static QuestManager Instance { get; private set; }
-    public static bool IsGameOver { get; private set; }
 
-    private int step;          // 0: coord, 1: natan, 2: bloco1, 3: fim
-    private bool acceptedHelp;
+    /// <summary>Mantido para o restante do código (caderneta/portas) checar; hoje sempre falso.</summary>
+    public static bool IsGameOver => false;
+
+    private enum Cond { Manual, TalkToNpc, EnterRoom, ReachZone }
+
+    private class Objective
+    {
+        public string id;
+        public string titulo;      // mostrado na HUD
+        public Cond cond;          // como se conclui
+        public string alvo;        // npcId (TalkToNpc) ou roomId (EnterRoom)
+        public string proximo;     // id do próximo objetivo ("" = fim do dia por enquanto)
+        public string roomId;      // se preenchido, vira a sala liberada ao ativar (ClassSchedule)
+        public string roomLabel;   // rótulo amigável da sala liberada
+        public bool dayEnd;        // ao concluir, roda a transição de dia antes de ir pro próximo
+        public bool timeSkip;      // igual dayEnd, mas com o corte grande ("Algumas semanas depois")
+    }
+
+    // Sequência do Dia 1. Os objetivos de "ir para a aula" liberam a sala certa
+    // (roomId/roomLabel) ao serem ativados; os de "assistir" concluem ao falar com
+    // o professor. Estende-se com novos dias nas próximas etapas.
+    private readonly Objective[] objetivos =
+    {
+        new Objective
+        {
+            id = "ir_aula_ihc",
+            titulo = "Ir para a aula de IHC (Bloco 1 — Sala 1)",
+            cond = Cond.EnterRoom,
+            alvo = ClassSchedule.RoomIHC,
+            proximo = "assistir_ihc",
+            roomId = ClassSchedule.RoomIHC,
+            roomLabel = "IHC com a Rainara (Bloco 1, Sala 1)",
+        },
+        new Objective
+        {
+            id = "assistir_ihc",
+            titulo = "Assistir a aula de IHC (fale com a Rainara)",
+            cond = Cond.TalkToNpc,
+            alvo = "rainara",
+            proximo = "ir_aula_aragao",
+        },
+        new Objective
+        {
+            id = "ir_aula_aragao",
+            titulo = "Ir para a aula do professor Aragão (Bloco 2 — Sala 1)",
+            cond = Cond.EnterRoom,
+            alvo = ClassSchedule.RoomAragao,
+            proximo = "assistir_aragao",
+            roomId = ClassSchedule.RoomAragao,
+            roomLabel = "Matemática Básica com o Aragão (Bloco 2, Sala 1)",
+        },
+        new Objective
+        {
+            id = "assistir_aragao",
+            titulo = "Assistir a aula do professor Aragão (fale com o Aragão)",
+            cond = Cond.TalkToNpc,
+            alvo = "aragao",
+            proximo = "interacao_etica",
+        },
+        new Objective
+        {
+            id = "interacao_etica",
+            titulo = "Converse com alguém no campus (procure a Emilly, perto da Convivência)",
+            cond = Cond.TalkToNpc,
+            alvo = "emilly",
+            proximo = "jogar_pingpong",
+        },
+        new Objective
+        {
+            // Concluído pela partida em si (PingPongGameController → ForceComplete ao
+            // voltar da cena do minigame). Dá Ética + alívio de estresse (ver Start).
+            id = "jogar_pingpong",
+            titulo = "Relaxe um pouco: jogue pingue-pongue com o Vitim (na Convivência)",
+            cond = Cond.Manual,
+            proximo = "ir_aula_fup",
+            dayEnd = true, // encerra o Dia 1 → transição → Dia 2
+        },
+
+        // ---- Dia 2 ----
+        new Objective
+        {
+            id = "ir_aula_fup",
+            titulo = "Ir para a aula de FUP (Bloco 3 — Sala 1)",
+            cond = Cond.EnterRoom,
+            alvo = ClassSchedule.RoomFUP,
+            proximo = "assistir_fup",
+            roomId = ClassSchedule.RoomFUP,
+            roomLabel = "FUP com a Paulete (Bloco 3, Sala 1)",
+        },
+        new Objective
+        {
+            id = "assistir_fup",
+            titulo = "Assistir a aula de FUP (fale com a Paulete)",
+            cond = Cond.TalkToNpc,
+            alvo = "paulete",
+            proximo = "interacao_etica_d2",
+        },
+        new Objective
+        {
+            id = "interacao_etica_d2",
+            titulo = "Converse com um colega (procure a Yasmin, no corredor do Bloco 3)",
+            cond = Cond.TalkToNpc,
+            alvo = "yasmin",
+            proximo = "socializar_enzo",
+        },
+        new Objective
+        {
+            id = "socializar_enzo",
+            titulo = "Faça amizade: converse com o Enzo (corredor do Bloco 4)",
+            cond = Cond.TalkToNpc,
+            alvo = "enzo",
+            proximo = "ajudar_matheus",
+            dayEnd = true, // encerra o Dia 2 → transição → Dia 3
+        },
+
+        // ---- Dia 3 (véspera das provas) ----
+        new Objective
+        {
+            id = "ajudar_matheus",
+            titulo = "Ajude um colega: fale com o Matheus no campus",
+            cond = Cond.TalkToNpc,
+            alvo = "aluno_matheus",
+            proximo = "estudar_natan",
+        },
+        new Objective
+        {
+            id = "estudar_natan",
+            titulo = "Estude para as provas (vá ao RU e fale com o Natan)",
+            cond = Cond.TalkToNpc,
+            alvo = "natan",
+            proximo = "prova_ihc",
+            timeSkip = true, // depois do Dia 3 vem o salto temporal pras provas
+        },
+
+        // ---- Bloco de provas (pós time skip) ----
+        // Todas concluem por Cond.Manual: a prova em si (fala do professor / quiz /
+        // problema / labirinto) chama ForceComplete quando termina. O roomId de cada
+        // uma libera a sala certa, guiando o jogador de prova em prova.
+        new Objective
+        {
+            id = "prova_ihc",
+            titulo = "Prova de IHC — fale com a Rainara (Bloco 1 — Sala 1)",
+            cond = Cond.Manual,
+            proximo = "prova_ies",
+            roomId = ClassSchedule.RoomIHC,
+            roomLabel = "Prova de IHC (Bloco 1, Sala 1)",
+        },
+        new Objective
+        {
+            id = "prova_ies",
+            titulo = "Prova de IES — faça o quiz com o Jeferson (Bloco 4 — Sala 1)",
+            cond = Cond.Manual,
+            proximo = "prova_fup",
+            roomId = ClassSchedule.RoomIES,
+            roomLabel = "Prova de IES (Bloco 4, Sala 1)",
+        },
+        new Objective
+        {
+            id = "prova_fup",
+            titulo = "Prova de FUP — monte a solução com a Paulete (Bloco 3 — Sala 1)",
+            cond = Cond.Manual,
+            proximo = "prova_mat",
+            roomId = ClassSchedule.RoomFUP,
+            roomLabel = "Prova de FUP (Bloco 3, Sala 1)",
+        },
+        new Objective
+        {
+            id = "prova_mat",
+            titulo = "Prova de Matemática — use o portal do Labirinto (perto do RU)",
+            cond = Cond.Manual,
+            proximo = "",
+        },
+    };
+
+    private string currentId = "";
+
+    // Fim de dia pendente: guardado ao concluir o último objetivo do dia; a
+    // transição só roda quando não há diálogo/cutscene aberta (ver Update).
+    private bool pendingDayEnd;
+    private bool pendingTimeSkip;
+    private int pendingFinishedDay;
+    private string pendingNextId = "";
 
     private Text objectiveText;
-    private GameObject endPanel;
-    private Text endText;
+    private Text toastText;
+    private Coroutine toastCo;
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        IsGameOver = false;
         Time.timeScale = 1f;
         BuildUI();
-        UpdateObjective();
+
+        // Restaura o objetivo atual (ex.: ao voltar de um minigame, a cena recarrega
+        // mas GameProgress.CurrentObjectiveId persiste). SetCurrent reaplica também a
+        // sala liberada (ClassSchedule) do objetivo restaurado.
+        string restore = GameProgress.CurrentObjectiveId;
+
+        // Rede de segurança: se a abertura já rodou nesta sessão mas nenhum objetivo
+        // está ativo (ex.: replay no Editor sem domain reload, onde a abertura é
+        // pulada), garante que a sequência comece mesmo assim.
+        if (string.IsNullOrEmpty(restore) && GameProgress.CampusTourSeen)
+            restore = FirstObjectiveId();
+
+        SetCurrent(restore);
     }
+
+    private void Start()
+    {
+        // Voltando da partida de pingue-pongue (cena separada): jogar com o Vitim é
+        // uma interação social — concede Ética (com teto diário) e alivia o estresse.
+        // Feito no Start (não no Awake) porque depende do AcademicHud já existir.
+        if (PingPongSession.MatchPlayed)
+        {
+            PingPongSession.MatchPlayed = false;
+
+            if (!GameProgress.HasFlag("pingpong_jogado"))
+            {
+                GameProgress.SetFlag("pingpong_jogado");
+                float granted = GameProgress.AddEthics(1.0f);
+                if (AcademicHud.Instance != null) AcademicHud.Instance.AddStress(-8f);
+                ShowToast(granted > 0f
+                    ? $"Boa partida! Ética +{granted:0.0} · estresse aliviado"
+                    : "Boa partida! Estresse aliviado");
+            }
+
+            // Conclui o objetivo do ping-pong, se for o atual (encerra o Dia 1).
+            ForceComplete("jogar_pingpong");
+        }
+    }
+
+    private string FirstObjectiveId() => objetivos.Length > 0 ? objetivos[0].id : "";
 
     private void OnDestroy()
     {
-        if (Instance == this) { Instance = null; IsGameOver = false; Time.timeScale = 1f; }
+        if (Instance == this) { Instance = null; Time.timeScale = 1f; }
     }
 
     private void Update()
     {
-        // Na tela de fim, Enter reinicia a demo.
-        if (step != 3) return;
-        var kb = Keyboard.current;
-        if (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame))
+        // Dispara a transição de fim de dia quando o caminho estiver livre (sem
+        // diálogo, cutscene ou outra transição em andamento).
+        if (!pendingDayEnd) return;
+        if (DialogueManager.IsActive || CampusTourCutscene.Active) return;
+        if (DayTransition.Instance == null || DayTransition.Active) return;
+
+        pendingDayEnd = false;
+        int finished = pendingFinishedDay;
+        string next = pendingNextId;
+        bool timeSkip = pendingTimeSkip;
+
+        string line1 = timeSkip ? "Algumas semanas depois..." : $"Dia {finished} finalizado";
+        string line2 = timeSkip ? "Período de primeiras provas!" : $"Boa sorte no Dia {finished + 1}!";
+
+        DayTransition.Instance.Play(line1, line2, () =>
         {
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
+            if (timeSkip)
+            {
+                // Salto de semanas: pula o calendário e começa um novo período (zera
+                // o teto diário de Ética), mas não conta como "mais um dia".
+                GameProgress.EthicsGainedToday = 0f;
+                if (AcademicHud.Instance != null) AcademicHud.Instance.week += 5;
+            }
+            else
+            {
+                GameProgress.AdvanceDay();
+            }
+            SetCurrent(next);
+        });
     }
 
-    public void OnTalked(string npcId)
+    /// <summary>Ativa um objetivo por id (usado pela abertura pra definir o primeiro).</summary>
+    public void ActivateObjective(string id) => SetCurrent(id);
+
+    /// <summary>
+    /// Inicia a sequência no primeiro objetivo (chamado pela abertura ao terminar).
+    /// Não sobrescreve um objetivo já em andamento (ex.: sessão retomada).
+    /// </summary>
+    public void StartSequence()
     {
-        if (step == 0 && npcId == "coordenador")
-        {
-            step = 1;
-            UpdateObjective();
-        }
-        else if (step == 1 && npcId == "natan")
-        {
-            DialogueManager.Instance?.StartChoice(
-                "Natan",
-                "Bora estudar programação juntos essa semana?",
-                "Bora! (aceitar)",
-                "Agora não, valeu (recusar)",
-                choice =>
-                {
-                    acceptedHelp = (choice == 0);
-                    // Escolha afeta o estresse (aceitar ajuda alivia; recusar pesa um pouco).
-                    AcademicHud.Instance?.AddStress(acceptedHelp ? -15f : 10f);
-                    step = 2;
-                    UpdateObjective();
-                });
-        }
+        if (!string.IsNullOrEmpty(currentId)) return;
+        SetCurrent(FirstObjectiveId());
+        var o = Find(currentId);
+        if (o != null) ShowToast("Novo objetivo: " + o.titulo);
     }
 
-    public void OnReachedGoal()
+    /// <summary>Título do objetivo atual (para a caderneta). "" se não houver.</summary>
+    public string CurrentObjectiveTitle
     {
-        if (step != 2) return;
-        step = 3;
-        IsGameOver = true;
-        ShowEnd();
+        get { var o = Find(currentId); return o != null ? o.titulo : ""; }
     }
 
-    private void UpdateObjective()
+    /// <summary>Conclui o objetivo atual se a condição/alvo baterem, e avança.</summary>
+    public void OnTalked(string npcId) => TryComplete(Cond.TalkToNpc, npcId);
+    public void OnEnteredRoom(string roomId) => TryComplete(Cond.EnterRoom, roomId);
+    public void OnReachedGoal() => TryComplete(Cond.ReachZone, null);
+
+    /// <summary>Verdadeiro se o objetivo atual é o de id informado (para bloqueios/orientação).</summary>
+    public bool IsCurrent(string id) => currentId == id;
+
+    private void TryComplete(Cond cond, string alvo)
     {
-        string t;
-        switch (step)
+        var o = Find(currentId);
+        if (o == null || o.cond != cond) return;
+        if (cond != Cond.ReachZone && o.alvo != alvo) return;
+        AdvanceFrom(o);
+    }
+
+    /// <summary>
+    /// Conclui o objetivo atual identificado por id (usado por provas/minigames que
+    /// concluem por conta própria — objetivos Cond.Manual).
+    /// </summary>
+    public void ForceComplete(string id)
+    {
+        var o = Find(currentId);
+        if (o != null && o.id == id) AdvanceFrom(o);
+    }
+
+    private void AdvanceFrom(Objective o)
+    {
+        if (o.dayEnd || o.timeSkip)
         {
-            case 0: t = "Objetivo: fale com o Coordenador (na Convivência)"; break;
-            case 1: t = "Objetivo: vá ao RU (007, à esquerda) e fale com o Natan"; break;
-            case 2: t = "Objetivo: vá até o Bloco 1 (001, à direita)"; break;
-            default: t = ""; break;
+            // Não avança agora: guarda o fim-de-dia/salto e deixa a transição rodar
+            // quando o diálogo/escolha em andamento fechar (ex.: a escolha ética).
+            pendingDayEnd = true;
+            pendingTimeSkip = o.timeSkip;
+            pendingFinishedDay = GameProgress.CurrentDay;
+            pendingNextId = o.proximo;
+            ShowToast("✓ Objetivo concluído!");
+            SetCurrent(""); // limpa o objetivo; o próximo vem depois da transição
+            return;
         }
-        if (objectiveText != null) objectiveText.text = t;
+
+        var next = Find(o.proximo);
+        ShowToast(next != null
+            ? "✓ Concluído! Novo objetivo: " + next.titulo
+            : "✓ Provas concluídas! Confira suas notas na caderneta (ESC).");
+        SetCurrent(o.proximo);
     }
 
-    private void ShowEnd()
+    private void SetCurrent(string id)
     {
-        string msg = acceptedHelp
-            ? "Você topou estudar com o Natan.\nSeu primeiro dia terminou bem — o semestre promete!"
-            : "Você preferiu se virar sozinho por enquanto.\nPrimeiro dia concluído. Bom semestre, calouro!";
+        currentId = id ?? "";
+        GameProgress.CurrentObjectiveId = currentId;
 
-        if (endText != null) endText.text = "Fim da demo\n\n" + msg + "\n\n(Enter para jogar de novo)";
-        if (endPanel != null) endPanel.SetActive(true);
-        if (objectiveText != null) objectiveText.text = "";
-        Time.timeScale = 0f;
+        // Objetivo de "ir para a aula" libera a sala certa (as outras mostram
+        // "sala errada"). Assim o gating de sala acompanha o avanço do dia.
+        var o = Find(currentId);
+        if (o != null && !string.IsNullOrEmpty(o.roomId))
+        {
+            ClassSchedule.CurrentRoomId = o.roomId;
+            if (!string.IsNullOrEmpty(o.roomLabel)) ClassSchedule.CurrentRoomLabel = o.roomLabel;
+        }
+
+        RefreshObjectiveHud();
+    }
+
+    /// <summary>Mostra um aviso curto no topo (ex.: ganho de Ética). Reusa o toast.</summary>
+    public void ShowMessage(string message) => ShowToast(message);
+
+    private Objective Find(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return null;
+        foreach (var o in objetivos) if (o.id == id) return o;
+        return null;
+    }
+
+    private void RefreshObjectiveHud()
+    {
+        var o = Find(currentId);
+        if (objectiveText != null)
+            objectiveText.text = o != null ? "Objetivo: " + o.titulo : "";
+    }
+
+    private void ShowToast(string message)
+    {
+        if (toastText == null) return;
+        toastText.text = message;
+        if (toastCo != null) StopCoroutine(toastCo);
+        toastCo = StartCoroutine(ToastRoutine());
+    }
+
+    private IEnumerator ToastRoutine()
+    {
+        var c = toastText.color; c.a = 1f; toastText.color = c;
+        yield return new WaitForSecondsRealtime(2.2f);
+        // Fade out.
+        float t = 0f;
+        while (t < 0.6f)
+        {
+            t += Time.unscaledDeltaTime;
+            c.a = Mathf.Lerp(1f, 0f, t / 0.6f);
+            toastText.color = c;
+            yield return null;
+        }
+        toastText.text = "";
+        toastCo = null;
     }
 
     // ------------------------------------------------------------------ UI
@@ -120,7 +432,6 @@ public class QuestManager : MonoBehaviour
 
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-        // Objetivo (canto superior esquerdo).
         objectiveText = CreateText(canvasGO.transform, "Objective", font, 30, TextAnchor.UpperLeft);
         objectiveText.color = new Color(1f, 1f, 0.85f);
         objectiveText.fontStyle = FontStyle.Bold;
@@ -131,26 +442,17 @@ public class QuestManager : MonoBehaviour
         oRT.anchoredPosition = new Vector2(28f, -22f);
         oRT.sizeDelta = new Vector2(900f, 60f);
 
-        // Painel de fim (tela cheia).
-        endPanel = new GameObject("EndPanel");
-        endPanel.transform.SetParent(canvasGO.transform, false);
-        var eImg = endPanel.AddComponent<Image>();
-        eImg.color = new Color(0f, 0f, 0f, 0.92f);
-        var eRT = endPanel.GetComponent<RectTransform>();
-        eRT.anchorMin = Vector2.zero;
-        eRT.anchorMax = Vector2.one;
-        eRT.offsetMin = Vector2.zero;
-        eRT.offsetMax = Vector2.zero;
-
-        endText = CreateText(endPanel.transform, "EndText", font, 40, TextAnchor.MiddleCenter);
-        endText.color = Color.white;
-        var etRT = endText.rectTransform;
-        etRT.anchorMin = new Vector2(0.1f, 0.2f);
-        etRT.anchorMax = new Vector2(0.9f, 0.8f);
-        etRT.offsetMin = Vector2.zero;
-        etRT.offsetMax = Vector2.zero;
-
-        endPanel.SetActive(false);
+        // Aviso de objetivo concluído (topo-centro).
+        toastText = CreateText(canvasGO.transform, "Toast", font, 32, TextAnchor.MiddleCenter);
+        toastText.color = new Color(0.6f, 1f, 0.6f);
+        toastText.fontStyle = FontStyle.Bold;
+        var tRT = toastText.rectTransform;
+        tRT.anchorMin = new Vector2(0.5f, 1f);
+        tRT.anchorMax = new Vector2(0.5f, 1f);
+        tRT.pivot = new Vector2(0.5f, 1f);
+        tRT.anchoredPosition = new Vector2(0f, -100f);
+        tRT.sizeDelta = new Vector2(1200f, 50f);
+        toastText.text = "";
     }
 
     private Text CreateText(Transform parent, string name, Font font, int size, TextAnchor anchor)

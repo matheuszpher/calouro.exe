@@ -1,0 +1,741 @@
+fileFormatVersion: 2
+guid: 48544cf9dc526ea41abe21a73373d1a3
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -4430992374801711909
+    second: caloura_0
+  - first:
+      213: 8269521229050636338
+    second: caloura_1
+  - first:
+      213: 3100354298249854551
+    second: caloura_2
+  - first:
+      213: -650999995298670852
+    second: caloura_3
+  - first:
+      213: 4903161662809750549
+    second: caloura_4
+  - first:
+      213: -7787473083685820091
+    second: caloura_5
+  - first:
+      213: -3939823851188283930
+    second: caloura_6
+  - first:
+      213: -7497466883747505642
+    second: caloura_7
+  - first:
+      213: 8581112926386541401
+    second: caloura_8
+  - first:
+      213: -4851854835348158641
+    second: caloura_9
+  - first:
+      213: 6771556733799332677
+    second: caloura_10
+  - first:
+      213: 1090025982488835041
+    second: caloura_11
+  - first:
+      213: 7226254025099373945
+    second: caloura_12
+  - first:
+      213: -6672930457576301503
+    second: caloura_13
+  - first:
+      213: 6149540521342721915
+    second: caloura_14
+  - first:
+      213: 2469604424959255046
+    second: caloura_15
+  - first:
+      213: -8945129380555266085
+    second: caloura_16
+  - first:
+      213: 3261198932271816507
+    second: caloura_17
+  - first:
+      213: -8603004737889295638
+    second: caloura_18
+  - first:
+      213: 7527760330741893517
+    second: caloura_19
+  - first:
+      213: -6921539158035660688
+    second: caloura_20
+  - first:
+      213: -8371861373472117394
+    second: caloura_21
+  - first:
+      213: -7261916451595264804
+    second: caloura_22
+  - first:
+      213: -1335938040582439513
+    second: caloura_23
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 1
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 140
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: caloura_00
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 871
+        width: 99
+        height: 193
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 475ab4f65444cbc9a96f6fb77f0e5895
+      internalID: -431707972
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_01
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 871
+        width: 102
+        height: 193
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 28ce675a7e54de6f80800e8d8f79c7be
+      internalID: -2090144027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_02
+      rect:
+        serializedVersion: 2
+        x: 463
+        y: 871
+        width: 102
+        height: 193
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 82aa8ea5f35ed046b6aa6c8ef1f417af
+      internalID: -1333333313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_03
+      rect:
+        serializedVersion: 2
+        x: 678
+        y: 871
+        width: 101
+        height: 193
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 23e75248c47f20b61bf379eed664919f
+      internalID: 1391896158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_04
+      rect:
+        serializedVersion: 2
+        x: 830
+        y: 871
+        width: 110
+        height: 193
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 16ee644aeecb945f308e6ae1ad61fe37
+      internalID: -444557298
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_05
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 871
+        width: 120
+        height: 193
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 10e9858b79a0c03a0fcd58b6c8cacc85
+      internalID: 1052969142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_06
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 668
+        width: 99
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 845b0b114143579274829e376aa8ac52
+      internalID: 1116993385
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_07
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 668
+        width: 102
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0c1f646c4d4960dbd165ddc364eae2a5
+      internalID: -84019325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_08
+      rect:
+        serializedVersion: 2
+        x: 463
+        y: 668
+        width: 102
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d2020447b1df8e55d6c248bf405780b8
+      internalID: 606708895
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_09
+      rect:
+        serializedVersion: 2
+        x: 678
+        y: 668
+        width: 101
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f5b3107337e4c2a08641510c98280baa
+      internalID: -2093323871
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_10
+      rect:
+        serializedVersion: 2
+        x: 830
+        y: 668
+        width: 110
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 547a50023a87463255662fce21a966f2
+      internalID: 6771556733799332677
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_11
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 668
+        width: 120
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cb2ebcd3bcc2447df0a5adeab62a1304
+      internalID: 1090025982488835041
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_12
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 468
+        width: 99
+        height: 187
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7d35a6cd6091ff6880633d9f6d42c3ed
+      internalID: 7226254025099373945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_13
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 468
+        width: 102
+        height: 187
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e53be0163899f681cc8c5c314c3d048e
+      internalID: -6672930457576301503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_14
+      rect:
+        serializedVersion: 2
+        x: 463
+        y: 468
+        width: 102
+        height: 187
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5ed697c56d259651d8bd75cdee732403
+      internalID: 6149540521342721915
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_15
+      rect:
+        serializedVersion: 2
+        x: 678
+        y: 468
+        width: 101
+        height: 187
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d692791f9de588e0432b70189f8a89cc
+      internalID: 2469604424959255046
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_16
+      rect:
+        serializedVersion: 2
+        x: 830
+        y: 468
+        width: 110
+        height: 187
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a37d67ca915727e8917798ed5039e563
+      internalID: -8945129380555266085
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_17
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 468
+        width: 120
+        height: 187
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 070535ec05d1d3a365367874e60a8302
+      internalID: 3261198932271816507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_18
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 262
+        width: 99
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d7a8c6c1af38dd1905fe49625f74139f
+      internalID: -8603004737889295638
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_19
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 262
+        width: 102
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7926f93f8d195b01ffd5ccac530fe7f2
+      internalID: 7527760330741893517
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_20
+      rect:
+        serializedVersion: 2
+        x: 463
+        y: 262
+        width: 102
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8c681f669a33dff0c638025a248e495c
+      internalID: -6921539158035660688
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_21
+      rect:
+        serializedVersion: 2
+        x: 678
+        y: 262
+        width: 101
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 530c89a6a52ba0a618de1db2c539a535
+      internalID: -8371861373472117394
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_22
+      rect:
+        serializedVersion: 2
+        x: 830
+        y: 262
+        width: 110
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a6c426d90f9d577959e70a327facc39a
+      internalID: -7261916451595264804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: caloura_23
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 262
+        width: 120
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6e9c8c78e99f6e63ada11e94638e7cd5
+      internalID: -1335938040582439513
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: a203f179977ce9c48bb138f06a37652f
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      caloura_00: -431707972
+      caloura_01: -2090144027
+      caloura_02: -1333333313
+      caloura_03: 1391896158
+      caloura_04: -444557298
+      caloura_05: 1052969142
+      caloura_06: 1116993385
+      caloura_07: -84019325
+      caloura_08: 606708895
+      caloura_09: -2093323871
+      caloura_10: 6771556733799332677
+      caloura_11: 1090025982488835041
+      caloura_12: 7226254025099373945
+      caloura_13: -6672930457576301503
+      caloura_14: 6149540521342721915
+      caloura_15: 2469604424959255046
+      caloura_16: -8945129380555266085
+      caloura_17: 3261198932271816507
+      caloura_18: -8603004737889295638
+      caloura_19: 7527760330741893517
+      caloura_20: -6921539158035660688
+      caloura_21: -8371861373472117394
+      caloura_22: -7261916451595264804
+      caloura_23: -1335938040582439513
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
