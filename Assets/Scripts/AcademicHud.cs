@@ -18,8 +18,16 @@ public class AcademicHud : MonoBehaviour
     public float stressPerSecond = 1f;
 
     [Header("Semestre")]
-    public int week = 1;
     public int totalWeeks = 18;
+
+    /// <summary>
+    /// Semana exibida na caderneta, derivada de GameProgress.SemesterDay (o dia
+    /// absoluto do semestre é a fonte única da verdade — ver roadmap-v2.md, 3.1).
+    /// 100 dias não divide igual em 18 semanas, então isso é só decoração coerente.
+    /// </summary>
+    public int week => Mathf.Clamp(
+        Mathf.RoundToInt(GameProgress.SemesterDay / (GameProgress.SemesterTotalDays / (float)totalWeeks)),
+        1, totalWeeks);
 
     private readonly string[] disciplines =
     {
@@ -33,6 +41,7 @@ public class AcademicHud : MonoBehaviour
     private Image stressFillImg;
     private GameObject caderneta;
     private Text cadernetaText;
+    private Text daysLeftText;
     private bool open;
 
     private void Awake()
@@ -41,6 +50,7 @@ public class AcademicHud : MonoBehaviour
         Instance = this;
         BuildUI();
         SetCaderneta(false);
+        UpdateDaysLeft();
     }
 
     private void OnDestroy()
@@ -53,6 +63,7 @@ public class AcademicHud : MonoBehaviour
         // Sobe devagar com o tempo (só anda quando não está pausado).
         stress = Mathf.Clamp(stress + stressPerSecond * Time.deltaTime, 0f, maxStress);
         UpdateStressBar();
+        UpdateDaysLeft();
 
         // ESC abre/fecha a caderneta (não durante diálogo, cutscene de abertura,
         // nem na tela de fim). Na abertura o ESC é o "pular" da cutscene.
@@ -85,7 +96,7 @@ public class AcademicHud : MonoBehaviour
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("CADERNETA ACADÊMICA");
         sb.AppendLine($"Calouro: {GameProgress.PlayerName}");
-        sb.AppendLine($"Dia {GameProgress.CurrentDay}  ·  Semana {week} / {totalWeeks}");
+        sb.AppendLine($"Dia {GameProgress.SemesterDay} de {GameProgress.SemesterTotalDays}  ·  Semana {week} / {totalWeeks}");
         sb.AppendLine($"Estresse: {Mathf.RoundToInt(stress)}%");
         sb.AppendLine();
 
@@ -110,6 +121,18 @@ public class AcademicHud : MonoBehaviour
         sb.AppendLine();
         sb.AppendLine("(ESC para fechar)");
         cadernetaText.text = sb.ToString();
+    }
+
+    private int lastDaysLeftShown = int.MinValue;
+
+    /// <summary>Contador fixo no topo da tela: quantos dias faltam pro fim do semestre.</summary>
+    private void UpdateDaysLeft()
+    {
+        if (daysLeftText == null) return;
+        int daysLeft = Mathf.Max(0, GameProgress.SemesterTotalDays - GameProgress.SemesterDay);
+        if (daysLeft == lastDaysLeftShown) return;
+        lastDaysLeftShown = daysLeft;
+        daysLeftText.text = daysLeft == 1 ? "Falta 1 dia pro fim do semestre" : $"Faltam {daysLeft} dias pro fim do semestre";
     }
 
     private void UpdateStressBar()
@@ -165,6 +188,16 @@ public class AcademicHud : MonoBehaviour
         lRT.anchorMax = Vector2.one;
         lRT.offsetMin = Vector2.zero;
         lRT.offsetMax = Vector2.zero;
+
+        // Contador de dias do semestre (topo-centro, sempre visível).
+        daysLeftText = CreateText(canvasGO.transform, "DaysLeft", font, 24, TextAnchor.UpperCenter);
+        daysLeftText.color = new Color(0.9f, 0.9f, 0.9f);
+        var dRT = daysLeftText.rectTransform;
+        dRT.anchorMin = new Vector2(0.5f, 1f);
+        dRT.anchorMax = new Vector2(0.5f, 1f);
+        dRT.pivot = new Vector2(0.5f, 1f);
+        dRT.anchoredPosition = new Vector2(0f, -18f);
+        dRT.sizeDelta = new Vector2(480f, 34f);
 
         // Caderneta (centro).
         caderneta = new GameObject("CadernetaPanel");

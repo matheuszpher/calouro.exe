@@ -39,6 +39,18 @@ public static class GameProgress
     /// <summary>Dia atual (começa no 1). Avança em AdvanceDay (time skip vem depois).</summary>
     public static int CurrentDay = 1;
 
+    /// <summary>
+    /// Dia absoluto do semestre (1–100), fonte única do contador "faltam N dias" no
+    /// HUD e da semana derivada na caderneta. Diferente de CurrentDay (que só conta
+    /// dias jogáveis em sequência): SemesterDay salta de acordo com o calendário do
+    /// jogo (ver roadmap-v2.md, seção 3.1 — Calendário dos 100 dias) sempre que um
+    /// time skip acontece.
+    /// </summary>
+    public static int SemesterDay = 1;
+
+    /// <summary>Duração do semestre em dias, pro contador regressivo do HUD.</summary>
+    public const int SemesterTotalDays = 100;
+
     /// <summary>Ética já ganha no dia atual (zera a cada dia) — sustenta o teto diário.</summary>
     public static float EthicsGainedToday = 0f;
 
@@ -67,7 +79,17 @@ public static class GameProgress
     public static void AdvanceDay()
     {
         CurrentDay++;
+        SemesterDay++;
         EthicsGainedToday = 0f;
+    }
+
+    /// <summary>
+    /// Salta SemesterDay pra um valor absoluto (usado nos time skips do calendário
+    /// dos 100 dias). Nunca recua, pra um save/replay não bagunçar o contador.
+    /// </summary>
+    public static void JumpSemesterDayTo(int day)
+    {
+        if (day > SemesterDay) SemesterDay = day;
     }
 
     /// <summary>
@@ -79,4 +101,7 @@ public static class GameProgress
 
     public static bool HasFlag(string flag) => Flags.Contains(flag);
     public static void SetFlag(string flag) => Flags.Add(flag);
+
+    /// <summary>Remove uma flag (usado por efeitos de duração limitada, ex.: cheiro do trote só no dia).</summary>
+    public static void ClearFlag(string flag) => Flags.Remove(flag);
 }

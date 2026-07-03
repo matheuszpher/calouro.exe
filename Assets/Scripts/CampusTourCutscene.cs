@@ -67,9 +67,22 @@ public class CampusTourCutscene : MonoBehaviour
     private void Update()
     {
         if (started) return;
+
+        // Se o passeio já rodou antes (retomando um save, ou voltando de uma
+        // troca de cena inteira como o pingue-pongue — que recarrega o
+        // GameObject do Jeferson do estado SALVO na cena, ou seja, visível de
+        // novo), garante que ele não fique solto em frente ao RU. Checado toda
+        // vez (não só no Awake) porque SaveSystem.Load() só roda bem depois,
+        // quando o jogador escolhe "Continuar" na tela de título.
+        if (GameProgress.CampusTourSeen)
+        {
+            if (coordenador != null) coordenador.SetActive(false);
+            started = true;
+            return;
+        }
+
         if (TitleScreen.IsShowing) { sawTitle = true; return; }
         if (!sawTitle) return;                        // título nunca apareceu = volta de minigame → não roda
-        if (GameProgress.CampusTourSeen) { started = true; return; }
         Begin();
     }
 

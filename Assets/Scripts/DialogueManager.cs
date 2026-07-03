@@ -88,9 +88,27 @@ public class DialogueManager : MonoBehaviour
             }
             else
             {
-                StartDialogue(nearby.npcName, nearby.lines);
+                StartDialogue(nearby.npcName, WithSmellComment(nearby.CurrentLines()));
             }
+            // Depois da 1ª conversa, "lines" (a apresentação) dá lugar a
+            // "repeatLines" nas próximas vezes — ver NpcInteractable.CurrentLines.
+            nearby.MarkMet();
         }
+    }
+
+    /// <summary>
+    /// Se o jogador foi sujado no trote (TroteChase.SmellFlag), prefixa a fala com
+    /// um comentário aleatório de quem ele encontra sobre o cheiro — efeito dura
+    /// só o resto do dia (a flag é removida na próxima transição, ver QuestManager).
+    /// </summary>
+    private static string[] WithSmellComment(string[] lines)
+    {
+        if (lines == null || lines.Length == 0 || !GameProgress.HasFlag(TroteChase.SmellFlag))
+            return lines;
+        var result = new string[lines.Length + 1];
+        result[0] = TroteChase.RandomSmellComment();
+        System.Array.Copy(lines, 0, result, 1, lines.Length);
+        return result;
     }
 
     public void SetNearbyNpc(NpcInteractable npc)
@@ -251,6 +269,11 @@ public class DialogueManager : MonoBehaviour
                     QuestManager.Instance?.ShowMessage($"Nota de FUP: {g:0.0}");
                     QuestManager.Instance?.ForceComplete(obj);
                 });
+                break;
+            case "mat": // labirinto — MazeController.Finish() já grava a nota e chama ForceComplete
+                var player = GameObject.FindWithTag("Player");
+                Vector3 returnPos = player != null ? player.transform.position : Vector3.zero;
+                MazeController.Instance?.StartMaze(returnPos);
                 break;
         }
     }

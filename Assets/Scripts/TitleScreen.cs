@@ -11,14 +11,24 @@ public class TitleScreen : MonoBehaviour
 {
     public static bool IsShowing { get; private set; }
 
-    private enum Step { Name, Character }
-    private Step step = Step.Name;
+    private enum Step { Menu, Name, Character }
+    private Step step = Step.Menu;
 
     private GameObject panel;
+    private GameObject menuStep;
     private GameObject nameStep;
     private GameObject charStep;
     private Text nameText;
     private string playerName = "";
+
+    // Etapa de menu: Novo Jogo / Continuar (só aparece se houver save).
+    private int menuIndex;
+    private bool hasSave;
+    private Text menuNewGameText, menuContinueText, menuHint;
+
+    // Verdadeiro quando o jogador escolheu "Continuar" — Hide() não deve
+    // sobrescrever GameProgress.PlayerName com o campo local (vazio nesse fluxo).
+    private bool continuing;
 
     // 0 = calouro (homem), 1 = caloura (mulher).
     private int charIndex = 0;
@@ -69,7 +79,7 @@ public class TitleScreen : MonoBehaviour
         IsShowing = true;
         if (panel != null) panel.SetActive(true);
         Time.timeScale = 0f;
-        GoToNameStep();
+        GoToMenuStep();
     }
 
     private void Hide()
@@ -77,7 +87,8 @@ public class TitleScreen : MonoBehaviour
         IsShowing = false;
         if (panel != null) panel.SetActive(false);
         Time.timeScale = 1f;
-        GameProgress.PlayerName = string.IsNullOrWhiteSpace(playerName) ? "Calouro" : playerName.Trim();
+        if (!continuing)
+            GameProgress.PlayerName = string.IsNullOrWhiteSpace(playerName) ? "Calouro" : playerName.Trim();
     }
 
     private void OnTextInput(char c)
@@ -102,12 +113,27 @@ public class TitleScreen : MonoBehaviour
             return;
         }
 
-        if (step == Step.Name)
+        if (step == Step.Menu)
         {
-            if (kb.backspaceKey.wasPressedThisFrame && playerName.Length > 0)
+            if (hasSave && (kb.upArrowKey.wasPressedThisFrame || kb.downArrowKey.wasPressedThisFrame
+                || kb.wKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame))
             {
-                playerName = playerName.Substring(0, playerName.Length - 1);
-                RefreshName();
+                menuIndex = menuIndex == 0 ? 1 : 0;
+                RefreshMenu();
+            }
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)
+                ConfirmMenu();
+        }
+        else if (step == Step.Name)
+        {
+            if (kb.backspaceKey.wasPressedThisFrame)
+            {
+                if (playerName.Length > 0)
+                {
+                    playerName = playerName.Substring(0, playerName.Length - 1);
+                    RefreshName();
+                }
+                else GoToMenuStep();
             }
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)
                 GoToCharacterStep();
@@ -131,9 +157,57 @@ public class TitleScreen : MonoBehaviour
         }
     }
 
+    private void GoToMenuStep()
+    {
+        step = Step.Menu;
+        hasSave = SaveSystem.HasSave();
+        menuIndex = 0;
+        if (menuStep != null) menuStep.SetActive(true);
+        if (nameStep != null) nameStep.SetActive(false);
+        if (charStep != null) charStep.SetActive(false);
+        RefreshMenu();
+    }
+
+    /// <summary>"Novo Jogo" pula pro fluxo de nome/personagem de sempre (apagando
+    /// um save antigo, se houver); "Continuar" carrega o save e já entra em jogo.</summary>
+    private void ConfirmMenu()
+    {
+        if (menuIndex == 1 && hasSave)
+        {
+            if (!SaveSystem.Load())
+            {
+                hasSave = false;
+                RefreshMenu();
+                return;
+            }
+
+            continuing = true;
+            playerName = GameProgress.PlayerName;
+
+            appearance = Object.FindFirstObjectByType<PlayerAppearance>();
+            appearance?.Apply();
+
+            // QuestManager.Awake() já rodou antes do save carregar (o jogador só
+            // escolhe "Continuar" bem depois) — reaplica o objetivo restaurado
+            // agora, e manda o jogador pro campus (não guardamos posição no mapa).
+            QuestManager.Instance?.ActivateObjective(GameProgress.CurrentObjectiveId);
+            Vector3 spawn = DayTransition.Instance != null
+                ? (Vector3)DayTransition.Instance.campusSpawn
+                : new Vector3(-6f, 18.5f, 0f);
+            InteriorController.Instance?.ForceCampus(spawn);
+
+            Hide();
+            return;
+        }
+
+        if (hasSave) SaveSystem.Delete(); // "Novo Jogo" com save existente substitui o save antigo
+        GoToNameStep();
+    }
+
     private void GoToNameStep()
     {
         step = Step.Name;
+        if (menuStep != null) menuStep.SetActive(false);
         if (nameStep != null) nameStep.SetActive(true);
         if (charStep != null) charStep.SetActive(false);
         RefreshName();
@@ -142,6 +216,7 @@ public class TitleScreen : MonoBehaviour
     private void GoToCharacterStep()
     {
         step = Step.Character;
+        if (menuStep != null) menuStep.SetActive(false);
         if (nameStep != null) nameStep.SetActive(false);
         if (charStep != null) charStep.SetActive(true);
 
@@ -168,6 +243,21 @@ public class TitleScreen : MonoBehaviour
         if (appearance == null) appearance = Object.FindFirstObjectByType<PlayerAppearance>();
         if (appearance != null) appearance.Apply();
         Hide();
+    }
+
+    private void RefreshMenu()
+    {
+        if (menuNewGameText != null)
+            menuNewGameText.color = menuIndex == 0 ? new Color(1f, 0.9f, 0.5f) : Color.white;
+        if (menuContinueText != null)
+        {
+            menuContinueText.gameObject.SetActive(hasSave);
+            menuContinueText.color = menuIndex == 1 ? new Color(1f, 0.9f, 0.5f) : Color.white;
+        }
+        if (menuHint != null)
+            menuHint.text = hasSave
+                ? "[W/S] Escolher     [Enter] Confirmar     [Esc] Sair"
+                : "[Enter] Novo Jogo     [Esc] Sair";
     }
 
     private void RefreshName()
@@ -231,8 +321,28 @@ public class TitleScreen : MonoBehaviour
         subtitle.color = new Color(0.8f, 0.8f, 0.85f);
         Anchor(subtitle.rectTransform, new Vector2(0.5f, 0.74f), new Vector2(1200f, 60f));
 
+        BuildMenuStep(font);
         BuildNameStep(font);
         BuildCharStep(font);
+    }
+
+    private void BuildMenuStep(Font font)
+    {
+        menuStep = new GameObject("MenuStep");
+        menuStep.transform.SetParent(panel.transform, false);
+        StretchFull(menuStep);
+
+        menuNewGameText = CreateText(menuStep.transform, "NewGame", font, 40, TextAnchor.MiddleCenter);
+        menuNewGameText.text = "Novo Jogo";
+        Anchor(menuNewGameText.rectTransform, new Vector2(0.5f, 0.48f), new Vector2(600f, 60f));
+
+        menuContinueText = CreateText(menuStep.transform, "Continue", font, 40, TextAnchor.MiddleCenter);
+        menuContinueText.text = "Continuar";
+        Anchor(menuContinueText.rectTransform, new Vector2(0.5f, 0.38f), new Vector2(600f, 60f));
+
+        menuHint = CreateText(menuStep.transform, "MenuHint", font, 28, TextAnchor.MiddleCenter);
+        menuHint.color = new Color(1f, 0.9f, 0.5f);
+        Anchor(menuHint.rectTransform, new Vector2(0.5f, 0.22f), new Vector2(1000f, 60f));
     }
 
     private void BuildNameStep(Font font)

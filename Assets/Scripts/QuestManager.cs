@@ -33,6 +33,10 @@ public class QuestManager : MonoBehaviour
         public string roomLabel;   // rótulo amigável da sala liberada
         public bool dayEnd;        // ao concluir, roda a transição de dia antes de ir pro próximo
         public bool timeSkip;      // igual dayEnd, mas com o corte grande ("Algumas semanas depois")
+        public int semesterDayAfterSkip; // só usado com timeSkip: dia absoluto do semestre (1–100) após o salto
+        public string skipLine1, skipLine2; // só usado com timeSkip: mensagens custom (null = as genéricas de sempre)
+        public System.Action onActivate; // disparado quando o objetivo vira o atual (ex.: iniciar o trote)
+        public System.Action onComplete; // disparado ao concluir o objetivo (ex.: recompensa da side quest)
     }
 
     // Sequência do Dia 1. Os objetivos de "ir para a aula" liberam a sala certa
@@ -104,12 +108,12 @@ public class QuestManager : MonoBehaviour
             alvo = ClassSchedule.RoomFUP,
             proximo = "assistir_fup",
             roomId = ClassSchedule.RoomFUP,
-            roomLabel = "FUP com a Paulete (Bloco 3, Sala 1)",
+            roomLabel = "FUP com a Paulyne (Bloco 3, Sala 1)",
         },
         new Objective
         {
             id = "assistir_fup",
-            titulo = "Assistir a aula de FUP (fale com a Paulete)",
+            titulo = "Assistir a aula de FUP (fale com a Paulyne)",
             cond = Cond.TalkToNpc,
             alvo = "paulete",
             proximo = "interacao_etica_d2",
@@ -147,8 +151,24 @@ public class QuestManager : MonoBehaviour
             titulo = "Estude para as provas (vá ao RU e fale com o Natan)",
             cond = Cond.TalkToNpc,
             alvo = "natan",
+            proximo = "trote_correr",
+            dayEnd = true, // encerra o Dia 3 → transição → Dia 4 (trote)
+        },
+
+        // ---- Dia 4 (trote) ----
+        new Objective
+        {
+            // Não tem "condição" no sentido normal: assim que este objetivo fica
+            // ativo, TroteChase.BeginChase() põe Natan, Enzo, Matheus e Vitim pra
+            // correr atrás do jogador (ver onActivate). O próprio TroteChase chama
+            // ForceComplete quando a perseguição termina (pego ou escapou).
+            id = "trote_correr",
+            titulo = "Fuja dos veteranos! Corra ou entre em algum prédio.",
+            cond = Cond.Manual,
+            onActivate = () => TroteChase.Instance?.BeginChase(),
             proximo = "prova_ihc",
-            timeSkip = true, // depois do Dia 3 vem o salto temporal pras provas
+            timeSkip = true, // depois do trote vem o salto temporal pras provas
+            semesterDayAfterSkip = 20, // calendário dos 100 dias: Prova R1 cai no Dia 20 (roadmap-v2.md, 3.1B)
         },
 
         // ---- Bloco de provas (pós time skip) ----
@@ -176,7 +196,7 @@ public class QuestManager : MonoBehaviour
         new Objective
         {
             id = "prova_fup",
-            titulo = "Prova de FUP — monte a solução com a Paulete (Bloco 3 — Sala 1)",
+            titulo = "Prova de FUP — monte a solução com a Paulyne (Bloco 3 — Sala 1)",
             cond = Cond.Manual,
             proximo = "prova_mat",
             roomId = ClassSchedule.RoomFUP,
@@ -185,9 +205,75 @@ public class QuestManager : MonoBehaviour
         new Objective
         {
             id = "prova_mat",
-            titulo = "Prova de Matemática — use o portal do Labirinto (perto do RU)",
+            titulo = "Prova de Matemática — fale com o Aragão (Bloco 2 — Sala 1)",
             cond = Cond.Manual,
+            proximo = "notebook_prof",
+            roomId = ClassSchedule.RoomAragao,
+            roomLabel = "Prova de Matemática (Bloco 2, Sala 1)",
+            timeSkip = true, // Dia 20 (Prova R1) → Dia 28 (side quest do notebook)
+            semesterDayAfterSkip = 28,
+            skipLine1 = "Alguns dias depois...",
+            skipLine2 = "Um comunicado circula pelo campus: o professor Aragão perdeu um caderno importante.",
+        },
+
+        // ---- Dia 28 (SQ1 — Notebook Desaparecido, roadmap 3.9) ----
+        // As 4 etapas acontecem no mesmo dia (decisão de 03/07/2026): professor →
+        // Gabi (atendente do RU) → laboratório do Bloco 2 → devolução.
+        new Objective
+        {
+            // O Aragão não está na sala dele aqui: ele sai pra relaxar dentro da
+            // Convivência assim que percebe o sumiço (decisão de 04/07/2026) — por
+            // isso sem roomId/porta de sala de aula (a Convivência já tem porta
+            // própria, sem gating); é só entrar lá e falar com ele.
+            id = "notebook_prof",
+            titulo = "Fale com o Aragão sobre o caderno sumido (ele está dentro da Convivência)",
+            cond = Cond.TalkToNpc,
+            alvo = "aragao",
+            proximo = "notebook_ru",
+            // Primeiro ponto estável depois da Prova R1 — autosave daqui (decisão de
+            // 04/07/2026: "após a prova do Aragão"). Salvar aqui em vez de no exato
+            // fim da prova evita gravar um estado transitório (objetivo ainda vazio,
+            // dia do semestre ainda não saltado) enquanto o time skip está rodando.
+            onActivate = () => { MoveAragaoToConvivencia(); SaveSystem.Save(); },
+            // Ele volta pra sala assim que o papo acaba — é lá que a devolução
+            // acontece (objetivo "notebook_devolucao").
+            onComplete = () => MoveAragaoHome(),
+        },
+        new Objective
+        {
+            id = "notebook_ru",
+            titulo = "Pergunte no RU se alguém viu o caderno (fale com a Gabi)",
+            cond = Cond.TalkToNpc,
+            alvo = "atendente_ru",
+            proximo = "notebook_lab",
+        },
+        new Objective
+        {
+            id = "notebook_lab",
+            titulo = "Procure o caderno no laboratório do Bloco 2",
+            cond = Cond.TalkToNpc,
+            alvo = "notebook_objeto",
+            proximo = "notebook_devolucao",
+            roomId = ClassSchedule.RoomBloco2Lab,
+            roomLabel = "Laboratório (Bloco 2, Sala 2)",
+        },
+        new Objective
+        {
+            id = "notebook_devolucao",
+            titulo = "Devolva o caderno ao Aragão (Bloco 2 — Sala 1)",
+            cond = Cond.TalkToNpc,
+            alvo = "aragao",
             proximo = "",
+            roomId = ClassSchedule.RoomAragao,
+            roomLabel = "Bloco 2, Sala 1",
+            onComplete = () =>
+            {
+                GameProgress.SetFlag("notebook_devolvido");
+                float granted = GameProgress.AddEthics(1.0f);
+                QuestManager.Instance?.ShowMessage(granted > 0f
+                    ? $"Caderno devolvido! Ética +{granted:0.0}"
+                    : "Caderno devolvido!");
+            },
         },
     };
 
@@ -198,6 +284,8 @@ public class QuestManager : MonoBehaviour
     private bool pendingDayEnd;
     private bool pendingTimeSkip;
     private int pendingFinishedDay;
+    private int pendingSemesterDayAfterSkip;
+    private string pendingSkipLine1, pendingSkipLine2;
     private string pendingNextId = "";
 
     private Text objectiveText;
@@ -268,18 +356,23 @@ public class QuestManager : MonoBehaviour
         int finished = pendingFinishedDay;
         string next = pendingNextId;
         bool timeSkip = pendingTimeSkip;
+        int semesterDayAfterSkip = pendingSemesterDayAfterSkip;
 
-        string line1 = timeSkip ? "Algumas semanas depois..." : $"Dia {finished} finalizado";
-        string line2 = timeSkip ? "Período de primeiras provas!" : $"Boa sorte no Dia {finished + 1}!";
+        string line1 = timeSkip ? (pendingSkipLine1 ?? "Algumas semanas depois...") : $"Dia {finished} finalizado";
+        string line2 = timeSkip ? (pendingSkipLine2 ?? "Período de primeiras provas!") : $"Boa sorte no Dia {finished + 1}!";
 
         DayTransition.Instance.Play(line1, line2, () =>
         {
+            // Efeitos de duração "só hoje" (ex.: cheiro do trote) não sobrevivem a
+            // uma virada de dia, seja ela normal ou um salto temporal.
+            GameProgress.ClearFlag(TroteChase.SmellFlag);
+
             if (timeSkip)
             {
                 // Salto de semanas: pula o calendário e começa um novo período (zera
                 // o teto diário de Ética), mas não conta como "mais um dia".
                 GameProgress.EthicsGainedToday = 0f;
-                if (AcademicHud.Instance != null) AcademicHud.Instance.week += 5;
+                if (semesterDayAfterSkip > 0) GameProgress.JumpSemesterDayTo(semesterDayAfterSkip);
             }
             else
             {
@@ -338,6 +431,8 @@ public class QuestManager : MonoBehaviour
 
     private void AdvanceFrom(Objective o)
     {
+        o.onComplete?.Invoke();
+
         if (o.dayEnd || o.timeSkip)
         {
             // Não avança agora: guarda o fim-de-dia/salto e deixa a transição rodar
@@ -345,6 +440,9 @@ public class QuestManager : MonoBehaviour
             pendingDayEnd = true;
             pendingTimeSkip = o.timeSkip;
             pendingFinishedDay = GameProgress.CurrentDay;
+            pendingSemesterDayAfterSkip = o.semesterDayAfterSkip;
+            pendingSkipLine1 = o.skipLine1;
+            pendingSkipLine2 = o.skipLine2;
             pendingNextId = o.proximo;
             ShowToast("✓ Objetivo concluído!");
             SetCurrent(""); // limpa o objetivo; o próximo vem depois da transição
@@ -352,9 +450,13 @@ public class QuestManager : MonoBehaviour
         }
 
         var next = Find(o.proximo);
-        ShowToast(next != null
-            ? "✓ Concluído! Novo objetivo: " + next.titulo
-            : "✓ Provas concluídas! Confira suas notas na caderneta (ESC).");
+        if (next != null)
+        {
+            // Sem "próximo objetivo" pra anunciar (fim de uma cadeia, ex.: provas ou
+            // a devolução do notebook): deixa o toast a cargo do onComplete acima
+            // (ou nenhum, se não houver) em vez de um texto genérico que o pisaria.
+            ShowToast("✓ Concluído! Novo objetivo: " + next.titulo);
+        }
         SetCurrent(o.proximo);
     }
 
@@ -371,12 +473,72 @@ public class QuestManager : MonoBehaviour
             ClassSchedule.CurrentRoomId = o.roomId;
             if (!string.IsNullOrEmpty(o.roomLabel)) ClassSchedule.CurrentRoomLabel = o.roomLabel;
         }
+        o?.onActivate?.Invoke();
 
         RefreshObjectiveHud();
     }
 
     /// <summary>Mostra um aviso curto no topo (ex.: ganho de Ética). Reusa o toast.</summary>
     public void ShowMessage(string message) => ShowToast(message);
+
+    // ------------------------------------------------------------ Aragão (SQ1)
+
+    // O Aragão mora fixo na sala dele (Bloco 2 — Sala 1), mas durante o gatilho
+    // do notebook (objetivo "notebook_prof") sai pra dentro da Convivência (o
+    // salão da AC, não o deck externo) — reaproveita a mesma instância, salvando
+    // de onde veio, no mesmo esquema já usado pelo TroteChase pros veteranos
+    // (nunca em dois lugares do mapa ao mesmo tempo). Estáticos (não por serem
+    // globais de propósito, mas porque os lambdas de onActivate/onComplete vivem
+    // no inicializador do campo "objetivos" — nesse ponto a instância ainda não
+    // terminou de construir, então só dá pra referenciar membros static; ver
+    // CS0236). Como só existe um QuestManager por sessão mesmo, isso não muda
+    // o comportamento.
+    private static NpcInteractable aragaoNpc;
+    private static Vector3 aragaoHomePos;
+    private static Vector3 aragaoHomeScale;
+
+    private static NpcInteractable FindNpcById(string npcId)
+    {
+        foreach (var n in Object.FindObjectsByType<NpcInteractable>(FindObjectsSortMode.None))
+            if (n.npcId == npcId) return n;
+        return null;
+    }
+
+    private static NpcInteractable FindAragao()
+    {
+        if (aragaoNpc == null) aragaoNpc = FindNpcById("aragao");
+        return aragaoNpc;
+    }
+
+    private static void MoveAragaoToConvivencia()
+    {
+        var a = FindAragao();
+        if (a == null) return;
+        aragaoHomePos = a.transform.position;
+        aragaoHomeScale = a.transform.localScale;
+
+        // O salão da AC fica numa região à parte (interiorsRoot), sem coordenada
+        // fixa conhecida de fora — o Vitim (sempre parado perto da mesa de
+        // pingpong nessa hora do jogo) serve de âncora em tempo de execução.
+        // Offset medido pro vão livre entre as 4 mesinhas do meio, longe de
+        // móveis e do próprio Vitim (ver BuildConvivenciaInterior).
+        var vitim = FindNpcById("vitim");
+        Vector3 spot = vitim != null
+            ? vitim.transform.position + new Vector3(7.6f, 2.4f, 0f)
+            : aragaoHomePos; // rede de segurança: sem o Vitim (não deveria acontecer), não mexe
+
+        a.transform.position = new Vector3(spot.x, spot.y, aragaoHomePos.z);
+        a.transform.localScale = new Vector3(1.6f, 1.6f, 1f); // escala "de perto" do salão da AC, como o Vitim
+        a.hasChoice = false; // a escolha "Matemática te dá um frio na barriga?" já foi resolvida no Dia 1
+    }
+
+    private static void MoveAragaoHome()
+    {
+        var a = FindAragao();
+        if (a == null) return;
+        a.transform.position = aragaoHomePos;
+        a.transform.localScale = aragaoHomeScale;
+    }
 
     private Objective Find(string id)
     {

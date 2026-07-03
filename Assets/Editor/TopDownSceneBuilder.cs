@@ -71,6 +71,7 @@ public static class TopDownSceneBuilder
         SetupInteriors();
         SetupTitle();
         SetupCampusTour();
+        SetupMusic();
 
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
         Debug.Log("[Calouro] Campus provisório montado! Salve (Ctrl+S) e dê Play — a câmera segue o jogador (WASD/setas).");
@@ -313,7 +314,9 @@ public static class TopDownSceneBuilder
 
     // ---- Campus UFC Quixadá (amplo, baseado no mapa oficial) ----
 
-    private const float MapXMin = -40f, MapXMax = 40f, MapYMin = -42f, MapYMax = 42f;
+    // MapXMin estendido de -40 pra -52 em 04/07/2026 pra abrir espaço pro RU se
+    // afastar mais da Convivência (ver BuildCampus — RU e o novo Path_RU_Conv).
+    private const float MapXMin = -52f, MapXMax = 40f, MapYMin = -42f, MapYMax = 42f;
     private const float WallT = 0.6f;
 
     // Posições-chave (compartilhadas entre os montadores).
@@ -327,8 +330,6 @@ public static class TopDownSceneBuilder
     private static readonly Vector2 PosBloco1 = new Vector2(2f, 10f);      // Bloco 1 (001)
     private static readonly Vector2 PosBloco1Front = new Vector2(2f, 4.4f); // frente da porta do Bloco 1
     private static readonly Vector2 PosPortal = new Vector2(2f, -6f);      // Bloco 3 (003)
-    private static readonly Vector2 PosMazePortal = new Vector2(-6f, -6f); // portal da prova (área aberta)
-    private static readonly Vector3 ReturnPos = new Vector3(-5f, -1.8f, 0f);
 
     private static Sprite s_white;
     private static int roomCounter;
@@ -363,6 +364,19 @@ public static class TopDownSceneBuilder
     private const string MorroGramaPath = "Assets/Art/Env/morro_grama.png";
     // Estrada em H dos blocos (só chão, sem colisão). Já vem cortada — 804x708.
     private const string CaminhoBlocoPath = "Assets/Art/Env/caminho_bloco.png";
+    // Saída norte dos Blocos 1/2 até a passarela — formato de "П" (barra
+    // horizontal + 2 pernas). Canvas quadrado 1254x1254; conteúdo visível em
+    // x 0.094–0.903, y 0.228–0.777 (medido por alpha); pernas em x 0.393–0.595
+    // e 0.705–0.903 (centros a ~0,311 do canvas um do outro), barra ocupa até
+    // y≈0.455. Só chão, sem colisão — igual à estrada em H.
+    private const string CaminhoCimaPath = "Assets/Art/Env/caminho_cima.png";
+    // Pedaço de caminho reto (só chão, sem colisão) — liga o RU (agora mais
+    // afastado) à Convivência (04/07/2026). Canvas 1254x1254; conteúdo visível
+    // em x 0.107–0.865, y 0.405–0.611 (medido por alpha), aspecto ~3.68:1.
+    private const string PedacoCaminhoPath = "Assets/Art/Env/pedaco_caminho.png";
+
+    // Música tema (loop, tocando desde a tela de título — ver SetupMusic/MusicPlayer).
+    private const string MusicThemePath = "Assets/Audio/musica_tema.mp3";
 
     private static void BuildCampus(Transform root, Sprite white)
     {
@@ -471,7 +485,36 @@ public static class TopDownSceneBuilder
 
         // Saída norte (túnel) do Bloco 1/2 → cruza com a passarela da entrada,
         // direcionando para o início da rua da Guarita.
-        CreateQuad(root, "Path_SaidaNorte_12", new Vector2(3.5f, 17.4f), new Vector2(21f, 5f), path, white, -9, false);
+        // 4º ajuste (04/07/2026): a base do "П" (as pernas) ainda deixava um
+        // vão de grama antes de encostar nos blocos — via Editor, "aproximar
+        // levemente a parte das curvas em relação ao bloco (esticar pra
+        // baixo), sem alterar a parte mais alta". Mantém o topo exatamente
+        // onde estava (perto da passarela) e só estica a altura pra baixo, até
+        // a base das pernas encostar no topo visual dos blocos (ctop ≈14,82,
+        // igual em BuildBlocoBuilding pro Bloco 1 e 2 — arte deles diferente,
+        // mas a fração de conteúdo foi calibrada pra dar o mesmo valor).
+        // Medido por alpha em caminho_cima.png v2 (conteúdo em x 0,078–0,754,
+        // y 0,199–0,595; pernas centradas em x 0,332 e 0,667, ≈0,335 do canvas
+        // uma da outra). Largura: mesma lógica de antes (pernas exatas nas
+        // portas norte do Bloco 1 x=2 e do Bloco 2 x=13, 11 unidades). Só chão
+        // (sem colisão).
+        const float saidaLegSpacingFrac = 0.3349f;   // medido na arte: distância entre o centro das 2 pernas
+        const float saidaLegCenterFrac = 0.3318f;    // medido na arte: centro da perna esquerda
+        const float saidaContentTopFrac = 0.1994f;   // medido na arte: topo do conteúdo (barra)
+        const float saidaContentBottomFrac = 0.5949f; // medido na arte: base do conteúdo (pernas)
+        const float saidaCanvasW = 11f / saidaLegSpacingFrac; // ≈32.9 — não muda neste ajuste
+        const float saidaContentTopY = 21.2f;   // topo atual (perto da passarela) — fica como está
+        const float saidaContentBottomY = 14.82f; // topo visual dos blocos — pernas passam a encostar ali
+        const float saidaCanvasH = (saidaContentTopY - saidaContentBottomY) / (saidaContentBottomFrac - saidaContentTopFrac); // ≈16.1
+        float saidaCenterX = 2f + (0.5f - saidaLegCenterFrac) * saidaCanvasW;
+        float saidaCenterY = saidaContentBottomY + (saidaContentBottomFrac - 0.5f) * saidaCanvasH;
+        Vector2 saidaCenter = new Vector2(saidaCenterX, saidaCenterY);
+        Vector2 saidaCanvasSize = new Vector2(saidaCanvasW, saidaCanvasH);
+        Sprite saidaArt = GetEnvSprite(CaminhoCimaPath, 100f, repeat: false);
+        if (saidaArt != null)
+            StretchedSprite(root, "Path_SaidaNorte_12", saidaCenter, saidaCanvasSize, saidaArt, -8, Color.white);
+        else
+            CreateQuad(root, "Path_SaidaNorte_12", new Vector2(3.5f, 17.4f), new Vector2(21f, 5f), path, white, -9, false);
 
         var roofServico = new Color(0.42f, 0.48f, 0.30f);   // telhado serviço (verde)
 
@@ -503,8 +546,30 @@ public static class TopDownSceneBuilder
 
         // 007 — RU: exterior (lateral) no campus; entrar faz TRANSIÇÃO de tela para
         // o refeitório (ru_interno), onde está o Natan.
-        BuildRUBuilding(root, "RU (007)", new Vector2(-22f, 2f), 22f,
-            RUExtPath, new Vector4(0.022f, 0.301f, 0.977f, 0.627f), 0.506f, 0.627f);
+        // Afastado mais da Convivência em 04/07/2026 (era x=-22) e a porta
+        // passou do lado SUL pro lado LESTE (de frente pra Convivência, ligada
+        // pelo Path_RU_Conv) — ver BuildRUBuilding.
+        BuildRUBuilding(root, "RU (007)", new Vector2(-32f, 2f), 22f,
+            RUExtPath, new Vector4(0.022f, 0.301f, 0.977f, 0.627f), 0.6f);
+
+        // Caminho reto ligando a porta leste do RU à Convivência (pedaco_caminho.png,
+        // 04/07/2026) — preenche o vão criado ao afastar o RU. Conteúdo medido por
+        // alpha: x 0.107–0.865 (aspecto ~3,68:1), esticado sem distorcer (canvas
+        // quadrado, mesma escala nos dois eixos) até preencher exatamente o vão
+        // entre a borda direita do RU e a borda esquerda da Convivência.
+        {
+            const float pedacoContentFracW = 0.758f; // (1084-134)/1254, medido por alpha
+            float ruRight = -32f + (0.977f - 0.5f) * (22f * 0.8f); // borda direita do conteúdo do RU
+            float convLeft = ConvCenter.x + (0.33f - 0.5f) * ConvCanvas; // borda esquerda do conteúdo da AC
+            float pedacoContentW = convLeft - ruRight;
+            float pedacoSide = pedacoContentW / pedacoContentFracW; // canvas quadrado, mesma escala nos 2 eixos
+            Vector2 pedacoCenter = new Vector2((ruRight + convLeft) / 2f, 2f);
+            Sprite pedacoArt = GetEnvSprite(PedacoCaminhoPath, 100f, repeat: false);
+            if (pedacoArt != null)
+                StretchedSprite(root, "Path_RU_Conv", pedacoCenter, new Vector2(pedacoSide, pedacoSide), pedacoArt, -8, Color.white);
+            else
+                CreateQuad(root, "Path_RU_Conv", pedacoCenter, new Vector2(pedacoContentW, 4f), path, white, -9, false);
+        }
 
         // 005 — Convivência (entre o RU e os blocos): arte externa convivencia_ext.png
         // (prédio coberto + deck/escada + jardim, quadrada — canvasW = canvasH, ao
@@ -633,12 +698,13 @@ public static class TopDownSceneBuilder
         // Footprints dos exteriores em perspectiva (base ao sul).
         Block(2, 10, 7, 11, 1.5f); Block(13, 10, 7, 11, 1.5f);
         Block(2, -6, 7, 11, 1.5f); Block(13, -6, 7, 11, 1.5f);
-        Block(-22, 2.8f, 18, 9, 1.5f); Block(-6, 22, 5, 4, 1.5f);
+        Block(-32, 2.8f, 18, 9, 1.5f); Block(-6, 22, 5, 4, 1.5f);
         Block(-24, -10, 8, 3, 1.5f); Block(2, -22, 9, 3, 1.5f); // Departamentos 008/009
         Block(-7, 2, 11, 10, 1.5f);                      // Convivência / spawn
+        Block(-16.5f, 2f, 15f, 5f, 1f);                  // Path_RU_Conv (04/07/2026)
         Block(1, 2, 28, 5, 1f); Block(2, -2, 4, 28, 1f); // caminhos (praça central / coluna esq.)
         Block(2, -19, 4, 8, 1f); Block(-6, 15, 4, 14, 1f);
-        Block(13, -4.5f, 4, 21, 1f); Block(3.5f, 17.4f, 21, 5, 1f); // coluna dir. / saída norte 1-2
+        Block(13, -4.5f, 4, 21, 1f); Block(7.5f, 16.35f, 32.9f, 16.1f, 1f); // coluna dir. / saída norte 1-2 (caminho_cima.png)
         Block(-6, -6, 3, 3, 2f);                        // portal da prova
 
         bool Free(float x, float y)
@@ -727,6 +793,19 @@ public static class TopDownSceneBuilder
 
         if (changed) importer.SaveAndReimport();
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    /// <summary>Importa (se preciso) e retorna um clipe de áudio de Assets/Audio.</summary>
+    private static AudioClip GetAudioClip(string path)
+    {
+        var importer = AssetImporter.GetAtPath(path) as AudioImporter;
+        if (importer == null)
+        {
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            importer = AssetImporter.GetAtPath(path) as AudioImporter;
+            if (importer == null) { Debug.LogWarning($"[Calouro] Não achei {path}."); return null; }
+        }
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
     }
 
     /// <summary>
@@ -862,12 +941,55 @@ public static class TopDownSceneBuilder
             southSpawn, bmin, bmax, hasNorthDoor ? (Vector3?)northSpawn : null, playerScale: 1.6f);
     }
 
-    /// <summary>RU: exterior (lateral) no campus + refeitório por transição de tela.</summary>
+    /// <summary>
+    /// RU: exterior (lateral) no campus + refeitório por transição de tela.
+    /// Diferente de BuildExterior (usado pelos Blocos): a porta fica no lado
+    /// LESTE do prédio (de frente pra Convivência), não no sul — decisão de
+    /// 04/07/2026, pra o RU se afastar da Convivência com um caminho entre os
+    /// dois. doorNormY = fração vertical (0 topo, 1 base) do conteúdo onde a
+    /// porta fica.
+    /// </summary>
     private static void BuildRUBuilding(Transform root, string label, Vector2 center, float canvasH,
-        string extPath, Vector4 content, float doorNormX, float doorBottomNormY)
+        string extPath, Vector4 content, float doorNormY)
     {
         var (spawn, bmin, bmax) = BuildRUInterior(label);
-        BuildExterior(root, label, center, canvasH, extPath, content, doorNormX, doorBottomNormY, spawn, bmin, bmax);
+
+        float canvasW = canvasH * 0.8f; // artes externas são 1122x1402 (0.8)
+        Vector2 size = new Vector2(canvasW, canvasH);
+
+        Sprite art = GetEnvSprite(extPath, 100f, repeat: false);
+        if (art != null)
+            StretchedSprite(root, "Ext_" + label, center, size, art, 3, Color.white);
+        else
+            CreateQuad(root, "Ext_" + label, center, size, new Color(0.5f, 0.6f, 0.4f), s_white, 3, false);
+
+        // Retângulo do conteúdo visível no mundo (canvas: y cresce pra baixo).
+        float cl = center.x + (content.x - 0.5f) * canvasW;
+        float cr = center.x + (content.z - 0.5f) * canvasW;
+        float ctop = center.y + (0.5f - content.y) * canvasH;
+        float cbot = center.y + (0.5f - content.w) * canvasH;
+
+        // Colisão sólida sobre o corpo do prédio.
+        CreateQuad(root, "ExtCol_" + label, new Vector2((cl + cr) / 2f, (ctop + cbot) / 2f),
+            new Vector2(cr - cl, ctop - cbot), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+
+        // Gatilho da porta, agora do lado LESTE (à direita da fachada), virado
+        // pra Convivência/o novo caminho.
+        float doorY = ctop + (cbot - ctop) * doorNormY;
+        var trig = new GameObject("Door_" + label);
+        trig.transform.SetParent(root, false);
+        trig.transform.position = new Vector3(cr + 0.9f, doorY, 0f);
+        var box = trig.AddComponent<BoxCollider2D>();
+        box.isTrigger = true;
+        box.size = new Vector2(2.2f, 2.6f);
+        var bd = trig.AddComponent<BuildingDoor>();
+        bd.roomSpawn = spawn;
+        bd.returnPosition = new Vector3(cr + 2.6f, doorY, 0f); // mais a leste (não re-entra)
+        bd.roomBoundsMin = bmin;
+        bd.roomBoundsMax = bmax;
+        bd.roomLabel = label;
+
+        Label(root, label, new Vector2(center.x, ctop + 0.8f), new Color(0.96f, 0.96f, 0.88f));
     }
 
     /// <summary>
@@ -1032,7 +1154,12 @@ public static class TopDownSceneBuilder
                 optionA: "Claro, bora ver isso.", optionB: "Agora não, tô sem tempo.",
                 replyA: "Aê! Você me salvou. Depois te pago um café.",
                 replyB: "Tranquilo, depois eu tento de novo. Valeu mesmo assim!",
-                scale: 1.6f, ethicsRewardA: 1.0f, ethicsRewardB: 0f);
+                scale: 1.6f, ethicsRewardA: 1.0f, ethicsRewardB: 0f,
+                repeatLines: new[]
+                {
+                    new[] { "Oi de novo! Ainda tô decorando esse mapa do campus, viu." },
+                    new[] { "E aí! Achou o Bloco 4 mais fácil de achar agora?" },
+                });
         else if (label == "BLOCO 4 (004)")
             CreateAmbientNpc(interiorsRoot, "enzo.png", new Vector2(c.x, c.y), "Enzo", "enzo",
                 new[]
@@ -1044,7 +1171,12 @@ public static class TopDownSceneBuilder
                 optionA: "Claro, te mando tudo hoje!", optionB: "Ah, eu ainda preciso delas.",
                 replyA: "Mano, salvou demais! Semana que vem eu te retribuo.",
                 replyB: "Sem problema, eu me viro. Valeu mesmo assim!",
-                scale: 1.6f, ethicsRewardA: 1.0f, ethicsRewardB: 0f);
+                scale: 1.6f, ethicsRewardA: 1.0f, ethicsRewardB: 0f,
+                repeatLines: new[]
+                {
+                    new[] { "E aí! Valeu de novo pelas anotações." },
+                    new[] { "Oi! Bloco 4 continua um labirinto pra mim, confesso." },
+                });
 
         // 3 portas do lado direito → salas de aula.
         float[] dy = { 0.307f, 0.0185f, -0.326f };
@@ -1085,6 +1217,11 @@ public static class TopDownSceneBuilder
                         "Semanas se passaram e chegou a hora da avaliação de IHC.",
                         "Como a nossa disciplina é mais de reflexão, avaliei sua participação e as discussões em aula.",
                         "Pronto: sua nota de IHC já está registrada. Mandou bem!",
+                    },
+                    repeatLines: new[]
+                    {
+                        new[] { "Oi de novo! Como estão indo os estudos?", "Continue de olho em quem vai usar o que você constrói — isso é IHC na prática." },
+                        new[] { "Voltou pra rever a matéria? Que bom te ver por aqui.", "Qualquer dúvida sobre a disciplina, pode aparecer na sala." },
                     });
             }
             else if (label == "BLOCO 2 (002)" && i == 0)
@@ -1101,15 +1238,74 @@ public static class TopDownSceneBuilder
                     optionA: "Um pouco, confesso.", optionB: "Não, eu curto!",
                     replyA: "Normal. Com prática melhora — e eu tô aqui pra isso.",
                     replyB: "Ótimo! Então vai se dar bem no labirinto.",
-                    scale: 1.6f);
+                    scale: 1.6f,
+                    examObjective: "prova_mat", examKind: "mat",
+                    examLines: new[]
+                    {
+                        "Chegou a prova de Matemática Básica!",
+                        "São 4 labirintos em sequência, cada um valendo 2,5 pontos — e vão ficando mais difíceis.",
+                        "Resolve rápido que a nota de cada um é melhor. Boa sorte!",
+                    },
+                    altLines: new[]
+                    {
+                        new NpcInteractable.ObjectiveLineSet
+                        {
+                            objectiveId = "notebook_prof",
+                            lines = new[]
+                            {
+                                "Ei, calouro! Que bom que passou por aqui de novo.",
+                                "Confesso que tô com um probleminha: sumiu meu caderno de anotações — tinha até um esboço de questões pra próxima prova.",
+                                "Acho que esqueci ele no RU, na correria depois da última prova. Você topa dar uma olhada lá?",
+                            },
+                        },
+                        new NpcInteractable.ObjectiveLineSet
+                        {
+                            objectiveId = "notebook_devolucao",
+                            lines = new[]
+                            {
+                                "Opa, meu caderno! Você achou mesmo!",
+                                "Muito obrigado, calouro. Isso me economizou um baita perrengue.",
+                            },
+                        },
+                    },
+                    repeatLines: new[]
+                    {
+                        new[] { "E aí, calouro! Como estão os estudos de Matemática?", "Aquele labirinto ensina mais do que parece, hein?" },
+                        new[] { "Valeu de novo por aquele dia do caderno.", "Continue treinando lógica — ajuda até fora da minha matéria." },
+                    });
+            }
+            else if (label == "BLOCO 2 (002)" && i == 1)
+            {
+                // Laboratório: onde o caderno perdido do Aragão aparece (SQ1, 3.9).
+                // Sem arte própria ainda — um objeto simples (quadrado + interação),
+                // já que não é um personagem (sem folha de sprites 4x3).
+                float nx = (sbmin.x + sbmax.x) / 2f;
+                float ny = sbmax.y - 6f;
+                var notebookGO = CreateQuad(interiorsRoot, "NotebookObjeto", new Vector2(nx, ny),
+                    new Vector2(0.6f, 0.5f), new Color(0.85f, 0.7f, 0.2f), s_white, 5, false);
+                var nCol = notebookGO.AddComponent<CircleCollider2D>();
+                nCol.isTrigger = true;
+                nCol.radius = 1.6f;
+                var nInteract = notebookGO.AddComponent<NpcInteractable>();
+                nInteract.npcName = "Caderno";
+                nInteract.npcId = "notebook_objeto";
+                nInteract.lines = new[]
+                {
+                    "Um caderno emborcado embaixo de uma bancada, cheio de anotações de Matemática.",
+                    "Só pode ser do professor Aragão — bora devolver.",
+                };
+                nInteract.repeatLines = new[]
+                {
+                    new NpcInteractable.LineSet { lines = new[] { "A bancada agora está vazia — o caderno já foi devolvido." } },
+                };
             }
             else if (label == "BLOCO 3 (003)" && i == 0)
             {
                 float px = (sbmin.x + sbmax.x) / 2f;
-                CreateAmbientNpc(interiorsRoot, "paulete.png", new Vector2(px, sbmax.y - 6f), "Paulete", "paulete",
+                CreateAmbientNpc(interiorsRoot, "paulete.png", new Vector2(px, sbmax.y - 6f), "Paulyne", "paulete",
                     new[]
                     {
-                        "Oi, calouro! Eu sou a professora Paulete, de Fundamentos da Programação.",
+                        "Oi, calouro! Eu sou a professora Paulyne, de Fundamentos da Programação.",
                         "Aqui a gente aprende a pensar como um programador: dividir o problema em passos e resolver um de cada vez.",
                         "Na avaliação você vai montar a solução de um probleminha — nada de decoreba, é raciocínio.",
                     },
@@ -1123,6 +1319,11 @@ public static class TopDownSceneBuilder
                     {
                         "Hora da prova de Fundamentos da Programação!",
                         "Vou te dar um probleminha: você monta a solução colocando os passos na ordem certa. Bora?",
+                    },
+                    repeatLines: new[]
+                    {
+                        new[] { "Oi de novo! Continue treinando a lógica de programação.", "Dividir problemas em passos pequenos é a chave." },
+                        new[] { "Como estão indo os estudos de FUP?", "Qualquer dúvida sobre lógica, pode aparecer na sala." },
                     });
             }
             else if (label == "BLOCO 4 (004)" && i == 0)
@@ -1140,6 +1341,11 @@ public static class TopDownSceneBuilder
                     {
                         "Chegou a prova de Introdução à Engenharia de Software!",
                         "São algumas perguntas objetivas sobre os conceitos que a gente viu. Responde com calma.",
+                    },
+                    repeatLines: new[]
+                    {
+                        new[] { "Opa, calouro! Como está se adaptando ao curso?", "Engenharia de Software é sobre processo — não esquece disso." },
+                        new[] { "Precisando de alguma orientação? Pode perguntar.", "Bora focar no resto do semestre." },
                     });
             }
 
@@ -1238,7 +1444,44 @@ public static class TopDownSceneBuilder
             optionA: "Bora! Junto rende mais.", optionB: "Prefiro revisar sozinho.",
             replyA: "Isso! Duas cabeças pensam melhor. Já já você tá afiado.",
             replyB: "De boa, cada um no seu ritmo. Qualquer dúvida, tô aqui.",
-            ethicsRewardA: 1.0f, ethicsRewardB: 0f);
+            ethicsRewardA: 1.0f, ethicsRewardB: 0f,
+            repeatLines: new[]
+            {
+                new[] { "Fala, calouro! Bons estudos." },
+                new[] { "Se precisar revisar de novo, só chamar." },
+            });
+
+        // Gabi, atendente do RU — pista da side quest do notebook (3.9, Dia 28).
+        // Arte própria (gabi.png, folha 4x3 já no padrão dos outros NPCs — ver
+        // atendente-cantina.png original, recortada em GetCell/composta em
+        // 03/07/2026). Pose de lado olha pra ESQUERDA na arte, por isso
+        // invertSide: true (mesmo ajuste do Batatinha). Offset de +3.5 em X do
+        // Natan pra não sobrepor nos Dias 1–3 (antes do trote levar o Natan embora).
+        CreateAmbientNpc(interiorsRoot, "gabi.png",
+            new Vector2((gL + gR) / 2f + 3.5f, bottom + 5.0f), "Gabi", "atendente_ru",
+            new[]
+            {
+                "Oi! Eu sou a Gabi, trabalho aqui no RU.",
+                "Precisando de alguma coisa?",
+            },
+            invertSide: true,
+            repeatLines: new[]
+            {
+                new[] { "Precisando de mais alguma coisa?" },
+                new[] { "Volta sempre! O RU é praticamente sua segunda casa agora, né?" },
+            },
+            altLines: new[]
+            {
+                new NpcInteractable.ObjectiveLineSet
+                {
+                    objectiveId = "notebook_ru",
+                    lines = new[]
+                    {
+                        "Um caderno? Ah, sim — tinha um esquecido numa mesa outro dia.",
+                        "Acho que um aluno do Bloco 2 pegou pra devolver, mas nunca mais vi. Se eu fosse você, dava uma olhada no laboratório de lá.",
+                    },
+                },
+            });
 
         Label(interiorsRoot, "REFEITÓRIO — " + label, new Vector2(c.x, top + 1.0f), new Color(0.96f, 0.96f, 0.88f));
         Vector3 spawn = new Vector3((gL + gR) / 2f, bottom + 3.0f, 0f);
@@ -1338,7 +1581,14 @@ public static class TopDownSceneBuilder
             optionA: "Bora, to dentro!", optionB: "Agora não, valeu.",
             replyA: "Boa! Só esperar terminar esse ponto.",
             replyB: "Show, quando quiser é só chamar.",
-            scale: 1.6f);
+            scale: 1.6f,
+            // Repete antes do Dia 4 (trote) — depois disso o TroteChase troca
+            // por falas de zoação sobre a corrida, ver TroteChase.Resolve.
+            repeatLines: new[]
+            {
+                new[] { "Bora outra? Sempre tem espaço na mesa." },
+                new[] { "E aí, quer jogar de novo?" },
+            });
 
         // Aceitando o convite (opção A), os dois andam até os lados opostos da
         // mesa e o minigame de pingue-pongue carrega (ver VitimPingPongTrigger e
@@ -1547,7 +1797,7 @@ public static class TopDownSceneBuilder
         CreateAmbientNpc(root.transform, "batata.png", new Vector2(-9f, -5f), "Batatinha", "batatinha",
             new[] { "Au au!" }, patrolAreaSize: 10f,
             downFrames: new[] { 0, 5 }, sideFrames: new[] { 2, 3 }, upFrames: new[] { 1, 6 },
-            downIdle: 8, sideIdle: 11, upIdle: 9, invertSide: true);
+            downIdle: 8, sideIdle: 11, upIdle: 9, invertSide: true, scale: 0.8f);
 
         // Alunos perambulando pelos caminhos que interligam os blocos (ambiente,
         // sem quest). Andam em vaivém/roam sobre os trechos caminháveis — o miolo
@@ -1567,9 +1817,14 @@ public static class TopDownSceneBuilder
             optionA: "Bora, a gente resolve isso.", optionB: "Foi mal, tô correndo agora.",
             replyA: "Aê! Contigo junto fica bem mais tranquilo. Valeu!",
             replyB: "De boa, depois eu tento sozinho. Bons estudos!",
-            ethicsRewardA: 1.0f, ethicsRewardB: 0f);
-        CreateAmbientNpc(root.transform, "paulete.png", new Vector2(3.5f, 17.4f), "Paulete", "aluno_paulete",
-            new[] { "Oi, tudo bem?" }, patrolDir: new Vector2(1f, 0f));
+            ethicsRewardA: 1.0f, ethicsRewardB: 0f,
+            // Repete antes do Dia 4 (trote) — depois disso o TroteChase troca
+            // por falas de zoação sobre a corrida, ver TroteChase.Resolve.
+            repeatLines: new[]
+            {
+                new[] { "E aí! Valeu de novo por aquela ajuda." },
+                new[] { "Bora, ainda tenho mais exercícios pra revisar depois." },
+            });
 
         // Emilly: interação ÉTICA obrigatória do Dia 1 (objetivo "interacao_etica").
         // Fica parada no deck da Convivência (fácil de achar). Ajudar dá +1.0 de
@@ -1585,7 +1840,12 @@ public static class TopDownSceneBuilder
             optionA: "Claro, bora resolver junto!", optionB: "Agora não dá, foi mal.",
             replyA: "Sério? Valeu demais! Assim o primeiro dia fica bem melhor.",
             replyB: "Ah... tranquilo, depois eu vejo. Boa aula!",
-            ethicsRewardA: 1.0f, ethicsRewardB: 0f);
+            ethicsRewardA: 1.0f, ethicsRewardB: 0f,
+            repeatLines: new[]
+            {
+                new[] { "Oi de novo! Como estão as matérias?" },
+                new[] { "Valeu por aquela ajuda com a lista, hein." },
+            });
     }
 
     private static NpcInteractable CreateNpc(Transform parent, string objName, string spritePath, Vector2 pos,
@@ -1629,11 +1889,19 @@ public static class TopDownSceneBuilder
         int[] downFrames = null, int[] sideFrames = null, int[] upFrames = null,
         int downIdle = 8, int sideIdle = 10, int upIdle = 9, bool invertSide = false,
         float scale = 1f, float ethicsRewardA = 0f, float ethicsRewardB = 0f,
-        string examObjective = null, string examKind = null, string[] examLines = null)
+        string examObjective = null, string examKind = null, string[] examLines = null,
+        NpcInteractable.ObjectiveLineSet[] altLines = null, string[][] repeatLines = null)
     {
         var npc = CreateNpc(parent, "NPC_" + displayName, CharsFolder + "/" + spriteFile, pos, displayName, npcId, lines);
         if (!Mathf.Approximately(scale, 1f))
             npc.transform.localScale = new Vector3(scale, scale, 1f);
+        if (altLines != null) npc.objectiveLines = altLines;
+        if (repeatLines != null)
+        {
+            npc.repeatLines = new NpcInteractable.LineSet[repeatLines.Length];
+            for (int k = 0; k < repeatLines.Length; k++)
+                npc.repeatLines[k] = new NpcInteractable.LineSet { lines = repeatLines[k] };
+        }
 
         if (choiceQuestion != null)
         {
@@ -1700,6 +1968,18 @@ public static class TopDownSceneBuilder
         }
     }
 
+    /// <summary>Música tema em loop, tocando desde a tela de título (3.18 do roadmap — 1ª trilha).</summary>
+    private static void SetupMusic()
+    {
+        var old = GameObject.Find("MusicPlayer");
+        if (old != null) Object.DestroyImmediate(old);
+
+        var go = new GameObject("MusicPlayer");
+        var player = go.AddComponent<MusicPlayer>();
+        player.theme = GetAudioClip(MusicThemePath);
+        player.volume = 0.5f;
+    }
+
     /// <summary>
     /// Abertura do Dia 1 (roda sozinha após a tela de título): o Jeferson percebe o
     /// calouro na passarela e sobe até ele, dá as boas-vindas, mostra o campus
@@ -1734,7 +2014,7 @@ public static class TopDownSceneBuilder
         tour.stops = new[]
         {
             TourStop(new Vector2(-6f, 1f), "Essa é a nossa Convivência — ponto de encontro entre uma aula e outra."),
-            TourStop(new Vector2(-22f, 2f), "Ali fica o RU, o Restaurante Universitário, coladinho no prédio administrativo. Comida barata e o Natan quase sempre por perto."),
+            TourStop(new Vector2(-32f, 2f), "Ali fica o RU, o Restaurante Universitário, coladinho no prédio administrativo. Comida barata e o Natan quase sempre por perto."),
             TourStop(PosBloco1, "O Bloco 1 é onde ficam a maioria das salas — inclusive a da sua primeira aula."),
             TourStop(new Vector2(13f, 10f), "Do lado, o Bloco 2, com mais salas e os laboratórios."),
             TourStop(new Vector2(7.5f, -6f), "Lá embaixo, os Blocos 3 e 4. Projeto e prova vão te trazer bastante por aqui."),
@@ -1743,15 +2023,17 @@ public static class TopDownSceneBuilder
         };
 
         // 3) O Jeferson vai até a porta do RU (007), que também é o administrativo,
-        //    e entra (some). A câmera acompanha. A rota desvia pelo corredor aberto a
-        //    OESTE da Convivência (x=-11, entre a Conv. em x≥-9.4 e o RU em x≤-13.6) e
-        //    chega à porta pelo sul (y=-1.7, abaixo do corpo do RU), sem atravessar
-        //    nenhum prédio.
+        //    e entra (some). A câmera acompanha. Desde que a porta passou pro lado
+        //    LESTE do RU (04/07/2026, de frente pra Convivência, ligada pelo novo
+        //    Path_RU_Conv), a rota ficou mais direta: desvia pelo corredor aberto a
+        //    OESTE da Convivência (x=-11, entre a Conv. em x≥-9.4 e o RU em x≤-23.6)
+        //    e desce só até a altura do caminho novo (y=2, não mais até o sul do
+        //    RU), sem atravessar nenhum prédio.
         tour.coordenadorExitPath = new[]
         {
             new Vector2(-11f, 15.5f),
-            new Vector2(-11f, -1.7f),
-            new Vector2(-21.9f, -1.7f),
+            new Vector2(-11f, 2f),
+            new Vector2(-22.7f, 2f),
         };
 
         // O primeiro objetivo é iniciado pelo próprio QuestManager ao fim da abertura
@@ -1770,9 +2052,14 @@ public static class TopDownSceneBuilder
         }
     }
 
-    // Labirinto (snake) — corredor de S até E, garantidamente solucionável.
+    // Labirintos da Prova de Matemática — 4 mapas de dificuldade crescente
+    // (2.5 pontos cada, ver MazeController). O 1º é o corredor "cobrinha" de
+    // sempre (garantidamente solucionável, sem escolha nenhuma); os outros 3
+    // são labirintos de verdade — gerados por backtracking recursivo (sempre
+    // solucionáveis, com bifurcações e becos sem saída de verdade) e crescem
+    // de tamanho a cada mapa.
     private const float MazeCell = 1.6f;
-    private static readonly string[] MazeMap =
+    private static readonly string[] MazeMapEasy =
     {
         "WWWWWWWWWW",
         "WS.......W",
@@ -1785,72 +2072,134 @@ public static class TopDownSceneBuilder
         "WWWWWWWWWW",
     };
 
+    /// <summary>
+    /// Gera um labirinto perfeito (uma única solução, sem loops) de cellsX x
+    /// cellsY células por backtracking recursivo. Semente fixa: o mapa sai
+    /// sempre igual a cada vez que a cena é montada, sem precisar guardar o
+    /// resultado. S fica na célula (0,0), E na célula mais distante (canto oposto).
+    /// </summary>
+    private static string[] GenerateMaze(int cellsX, int cellsY, int seed)
+    {
+        int w = cellsX * 2 + 1;
+        int h = cellsY * 2 + 1;
+        var open = new bool[w, h];
+        var visited = new bool[cellsX, cellsY];
+        var rng = new System.Random(seed);
+
+        void Carve(int cx, int cy)
+        {
+            visited[cx, cy] = true;
+            open[cx * 2 + 1, cy * 2 + 1] = true;
+
+            var dirs = new (int dx, int dy)[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
+            for (int i = dirs.Length - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (dirs[i], dirs[j]) = (dirs[j], dirs[i]);
+            }
+
+            foreach (var (dx, dy) in dirs)
+            {
+                int nx = cx + dx, ny = cy + dy;
+                if (nx < 0 || ny < 0 || nx >= cellsX || ny >= cellsY || visited[nx, ny]) continue;
+                open[cx * 2 + 1 + dx, cy * 2 + 1 + dy] = true; // derruba a parede entre as duas células
+                Carve(nx, ny);
+            }
+        }
+
+        Carve(0, 0);
+
+        var rows = new string[h];
+        for (int y = 0; y < h; y++)
+        {
+            var sb = new StringBuilder();
+            for (int x = 0; x < w; x++) sb.Append(open[x, y] ? '.' : 'W');
+            rows[y] = sb.ToString();
+        }
+
+        var startRow = rows[1].ToCharArray(); startRow[1] = 'S'; rows[1] = new string(startRow);
+        int ex = cellsX * 2 - 1, ey = cellsY * 2 - 1;
+        var endRow = rows[ey].ToCharArray(); endRow[ex] = 'E'; rows[ey] = new string(endRow);
+        return rows;
+    }
+
     private static void SetupMaze(Sprite white)
     {
         var old = GameObject.Find("Maze");
         if (old != null) Object.DestroyImmediate(old);
         var root = new GameObject("Maze");
 
-        int rows = MazeMap.Length;
-        int cols = MazeMap[0].Length;
-        const float baseX = 100f, baseY = 0f;
-        float left = baseX - cols * MazeCell / 2f;
-        float top = baseY + rows * MazeCell / 2f;
+        string[][] maps =
+        {
+            MazeMapEasy,
+            GenerateMaze(5, 5, 20260704),
+            GenerateMaze(7, 7, 20260705),
+            GenerateMaze(9, 9, 20260706),
+        };
 
         var wallColor = new Color(0.30f, 0.34f, 0.42f);
         var floorColor = new Color(0.12f, 0.13f, 0.16f);
-        Vector3 startPos = new Vector3(baseX, baseY, 0f);
 
-        CreateQuad(root.transform, "MazeFloor", new Vector2(baseX, baseY),
-            new Vector2(cols * MazeCell, rows * MazeCell), floorColor, white, -10, false);
+        const float baseX = 100f, baseY = 0f, gapX = 80f; // um labirinto do lado do outro, bem espaçados
+        var starts = new Vector3[maps.Length];
 
-        for (int r = 0; r < rows; r++)
+        for (int m = 0; m < maps.Length; m++)
         {
-            for (int c = 0; c < cols; c++)
-            {
-                char ch = MazeMap[r][c];
-                float x = left + (c + 0.5f) * MazeCell;
-                float y = top - (r + 0.5f) * MazeCell;
+            var map = maps[m];
+            int rows = map.Length;
+            int cols = map[0].Length;
+            float ox = baseX + m * gapX;
+            float left = ox - cols * MazeCell / 2f;
+            float top = baseY + rows * MazeCell / 2f;
 
-                if (ch == 'W')
+            var mazeRoot = new GameObject($"Maze_{m + 1}");
+            mazeRoot.transform.SetParent(root.transform, false);
+
+            Vector3 startPos = new Vector3(ox, baseY, 0f);
+
+            CreateQuad(mazeRoot.transform, "MazeFloor", new Vector2(ox, baseY),
+                new Vector2(cols * MazeCell, rows * MazeCell), floorColor, white, -10, false);
+
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
                 {
-                    CreateQuad(root.transform, $"MW_{r}_{c}", new Vector2(x, y),
-                        new Vector2(MazeCell, MazeCell), wallColor, white, 0, true);
-                }
-                else if (ch == 'S')
-                {
-                    startPos = new Vector3(x, y, 0f);
-                }
-                else if (ch == 'E')
-                {
-                    var exit = CreateQuad(root.transform, "MazeExit", new Vector2(x, y),
-                        new Vector2(MazeCell * 0.8f, MazeCell * 0.8f), new Color(0.3f, 1f, 0.4f, 0.75f), white, -9, false);
-                    var trg = exit.AddComponent<BoxCollider2D>();
-                    trg.isTrigger = true;
-                    exit.AddComponent<MazeExit>();
+                    char ch = map[r][c];
+                    float x = left + (c + 0.5f) * MazeCell;
+                    float y = top - (r + 0.5f) * MazeCell;
+
+                    if (ch == 'W')
+                    {
+                        CreateQuad(mazeRoot.transform, $"MW_{r}_{c}", new Vector2(x, y),
+                            new Vector2(MazeCell, MazeCell), wallColor, white, 0, true);
+                    }
+                    else if (ch == 'S')
+                    {
+                        startPos = new Vector3(x, y, 0f);
+                    }
+                    else if (ch == 'E')
+                    {
+                        var exit = CreateQuad(mazeRoot.transform, "MazeExit", new Vector2(x, y),
+                            new Vector2(MazeCell * 0.8f, MazeCell * 0.8f), new Color(0.3f, 1f, 0.4f, 0.75f), white, -9, false);
+                        var trg = exit.AddComponent<BoxCollider2D>();
+                        trg.isTrigger = true;
+                        exit.AddComponent<MazeExit>();
+                    }
                 }
             }
+
+            starts[m] = startPos;
         }
 
         var ctrlGO = GameObject.Find("MazeController") ?? new GameObject("MazeController");
         var ctrl = ctrlGO.GetComponent<MazeController>() ?? ctrlGO.AddComponent<MazeController>();
-        ctrl.mazeStart = startPos;
+        ctrl.mazeStarts = starts;
 
-        // Portal no RU (esquerda-baixo) que inicia a prova.
+        // Sem portal no campus: a Prova de Matemática agora é iniciada falando com
+        // o Aragão na sala dele (ver examObjective "prova_mat" em BuildBlocoInterior
+        // e DialogueManager.LaunchExam).
         var oldPortal = GameObject.Find("MazePortal");
         if (oldPortal != null) Object.DestroyImmediate(oldPortal);
-        var portal = new GameObject("MazePortal");
-        portal.transform.position = new Vector3(PosMazePortal.x, PosMazePortal.y, 0f);
-        portal.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
-        var psr = portal.AddComponent<SpriteRenderer>();
-        psr.sprite = white;
-        psr.color = new Color(0.3f, 0.6f, 1f, 0.8f);
-        psr.sortingOrder = -7;
-        var pcol = portal.AddComponent<CircleCollider2D>();
-        pcol.isTrigger = true;
-        pcol.radius = 1.4f;
-        var mp = portal.AddComponent<MazePortal>();
-        mp.returnPosition = ReturnPos;
     }
 
     private static void SetupQuest()
@@ -1859,6 +2208,14 @@ public static class TopDownSceneBuilder
         {
             var go = new GameObject("QuestManager");
             go.AddComponent<QuestManager>();
+        }
+
+        // Minigame do Dia 4 (trote): Natan/Enzo/Matheus/Vitim correndo atrás do
+        // jogador no próprio campus (ver TroteChase e roadmap-v2.md, 3.1B/3.6).
+        if (GameObject.Find("TroteChase") == null)
+        {
+            var go = new GameObject("TroteChase");
+            go.AddComponent<TroteChase>();
         }
 
         // Transição de fim de dia (tela preta "Dia N finalizado / Boa sorte no Dia

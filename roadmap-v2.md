@@ -73,6 +73,9 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 | Criação de personagem | Nome + **escolha de personagem na tela de título: calouro (homem) ou caloura (mulher)** — só essas duas opções, sem customização além disso (decisão do time em 02/07/2026, substitui o "aparência fixa" anterior). Folhas 6x4 `calouro.png`/`caloura.png`; a escolha vive em `GameProgress.PlayerCharacter` e é aplicada pelo `PlayerAppearance` |
 | Aula pulada / café | Contador `AulasPuladas`; 2+ → −0.5 em todas as notas no Arco 4 |
 | Documentos de design | GDD e Narrativa devem ser copiados para `docs/` no repositório (tarefa 3.20) |
+| **Calendário do semestre (NOVO, decisão do time em 03/07/2026)** | O semestre passa a ter uma linha do tempo explícita de **100 dias**, com o jogador jogando **14 dias concretos** (ver tabela em 3.1B) e o resto coberto por time skips. `GameProgress.SemesterDay` (1–100) é a fonte única da verdade; `AcademicHud.week` vira **derivado** dele (`arredondar(dia ÷ 5,56)`, já que 100 não divide igual em 18 semanas) — não é mais escrito diretamente. Contador **"Faltam N dias"** fixo no topo da tela (`AcademicHud`), sempre visível. Só Matemática e Fundamentos (os 2 minigames "nunca cortar") são sempre jogados quando caem numa prova; provas narrativas (IHC/Ética/Intro ES) que caírem dentro de um time skip futuro podem virar **notícia numa tela de resumo ao voltar** (ver 3.1B), em vez de sempre jogadas |
+| **Notebook (SQ1) resolvido no mesmo dia (ajuste sobre 3.9, decisão de 03/07/2026)** | A side quest do notebook (professor → atendente do RU → laboratório do Bloco 2 → devolução) acontece **inteira no mesmo dia jogável**, sem expirar por visitas em dias diferentes — substitui o "expira após 2 visitas à convivência" de 3.9 |
+| **Gabriel/Gabriela espelha o gênero do jogador (ajuste sobre 3.10, decisão de 03/07/2026)** | O NPC da SQ2 é **Gabriel** se `GameProgress.PlayerCharacter == "calouro"` e **Gabriela** se `"caloura"` (sprite e nome trocam com o gênero, mesma convenção 6x4 do `PlayerAppearance`) |
 
 ### Cut-list de emergência (em ordem — cortar de cima para baixo)
 1. Minigame do Vitim (pingue-pongue, 3.7B) — flavor opcional, não afeta notas/estresse/finais; se cortar, volta a ser a linha de diálogo original ("Iai, vai marcar time de fora?" sem aceitar o convite)
@@ -104,12 +107,45 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 - [ ] `CalcularFinal()`: todas ≥7.0 → Aprovação Direta | alguma 4.0–6.9 (e menos de 2 abaixo de 4.0) → Avaliação Final | 2+ abaixo de 4.0 → Reprovação
 - [ ] HUD de objetivo atual (herdado do `QuestManager` — manter e alimentar pelo marco ativo)
 
+**3.1B Calendário dos 100 dias (NOVO — decisão do time em 03/07/2026)**
+
+Substitui a ideia solta de "semana" como calendário principal. O semestre tem **100 dias absolutos** (`GameProgress.SemesterDay`); o jogador só joga **14 deles** — os outros são cobertos por time skips (`DayTransition`, mensagem "Algumas semanas depois..."). Os 4 Arcos continuam existindo, agora como faixas de dia (proporcional às semanas antigas: 3/4/6/5 de 18 semanas → 17/22/33/28 dias de 100).
+
+| Dia | Arco | Conteúdo | Status |
+|---|---|---|---|
+| 1 | 1 (dias 1–17) | Aula IHC (Rainara) + Matemática (Aragão) + ética c/ Emilly + ping-pong Vitim | ✅ pronto |
+| 2 | 1 | Aula FUP (Paulete) + ética c/ Yasmin + Enzo | ✅ pronto |
+| 3 | 1 | Ajudar Matheus + estudar c/ Natan | ✅ pronto |
+| 4 | 1 | Trote — perseguição no campus (3.6, ver nota) | ✅ pronto |
+| *(sem dia fixo ainda)* | 1 | Denúncia do veterano (3.12) — não incluída no Dia 4; falta decidir onde entra | ☐ a fazer |
+| *skip → 20* | 1→2 | "Algumas semanas depois..." — cobre resto da adaptação + convite da Calourada (1 linha/notícia) | ✅ mecanismo pronto (`semesterDayAfterSkip`) |
+| 20 | 2 (dias 18–39) | Prova R1: IHC + IES + FUP + Matemática (bloco já implementado, vira a "R1" do roadmap) | ✅ pronto |
+| 28 | 2 | Notebook desaparecido (SQ1, 3.9) — completo no mesmo dia (ver ajuste na seção 2) | ✅ pronto |
+| 32 | 2 | Gabriel/Gabriela pede ajuda — sessão de estudo (SQ2, 3.10) | ☐ a fazer |
+| 37 | 2 | 2º slot de tempo livre (3.3) | ☐ a fazer |
+| 48 | 3 (dias 40–72) | Slot de tempo livre (respiro do meio do semestre, 3.3) | ☐ a fazer |
+| 58 | 3 | Conversa do Coordenador (meio do semestre, 3.1 Arco 3) | ☐ a fazer |
+| 68 | 3 | Evento do Cedro (slot especial, reset parcial de estresse, 3.3/3.12) | ☐ a fazer |
+| 70 | 3 | Prova R2: Matemática (labirinto) + Fundamentos (debug) — sempre jogada (cut-list: nunca cortar) | ☐ a fazer |
+| 85 | 4 (dias 73–100) | Consequências visíveis (Gabriel/veteranos) + última conversa (resposta A/B/C) | ☐ a fazer |
+| 97 | 4 | Rodada final de provas (labirinto + debug finais) — sempre jogada → `CalcularFinal()` | ☐ a fazer |
+| 100 | 4 | Cutscene do final + créditos (desfecho, não é "dia jogável") | ☐ a fazer |
+
+- [x] `GameProgress.SemesterDay`/`SemesterTotalDays` + `JumpSemesterDayTo` (dia absoluto do semestre, nunca recua)
+- [x] `AcademicHud.week` derivado de `SemesterDay` (não é mais escrito por fora); caderneta mostra "Dia X de 100 · Semana Y/18"
+- [x] Contador fixo "Faltam N dias" no topo da tela (`AcademicHud`, sempre visível, atualiza em tempo real)
+- [x] `QuestManager`: objetivo de time skip carrega `semesterDayAfterSkip` (hoje só o Dia 3→20; próximos dias da tabela precisam do mesmo campo ao serem implementados)
+- [x] Dia 4 (Trote — perseguição no campus, ver 3.6)
+- [x] Dia 28 (Notebook Desaparecido — SQ1, ver 3.9)
+- [ ] Implementar o conteúdo dos dias 32, 37, 48, 58, 68, 70, 85, 97 (cada um nasce como tarefa própria nas seções já existentes: 3.10 pro Dia 32, 3.3 pros dias de slot livre, 3.1/3.7 pros Dias 70 e 97, 3.11 pro Dia 100)
+- [ ] Tela de resumo ao voltar de um time skip futuro, listando notícias de provas narrativas resolvidas automaticamente (só quando essa necessidade aparecer — nenhum dia da tabela acima ainda pula prova sem jogar)
+
 **3.2 Save em disco (NOVO — decisão do time)**
-- [ ] `SaveSystem` estático: `Save()` → `JsonUtility.ToJson(GameProgress.Data)` gravado em `Application.persistentDataPath + "/save.json"`; `Load()` → lê e popula `GameProgress.Data`; `HasSave()`; `Delete()`
-- [ ] Autosave automático no fim de cada arco (chamado pelo `ArcDirector` na transição) e ao usar "Salvar" no menu de pausa
-- [ ] `TitleScreen`: botão **Continuar** visível apenas se `HasSave()`; "Novo Jogo" com save existente pede confirmação e chama `Delete()` + `ResetRun()`
-- [ ] Ao carregar: `ArcDirector` deve saber retomar do **início do arco salvo** (não é preciso salvar posição no mapa — retomar no marco inicial do arco simplifica e evita bugs de estado)
-- [ ] Testar: salvar no Arco 2, fechar o jogo, Continuar → estado íntegro (notas, flags, estresse, semana)
+- [x] `SaveSystem` estático (04/07/2026): `Save()` → `JsonUtility.ToJson` gravado em `Application.persistentDataPath + "/save.json"`; `Load()` → lê e popula `GameProgress`/`AcademicHud.stress`; `HasSave()`; `Delete()`. **Diferença do plano original:** não existe `GameProgress.Data` (DTO único) — o `SaveSystem` lê/escreve os campos estáticos direto, e a classe `SaveData` fica privada dentro do próprio `SaveSystem.cs`
+- [x] Autosave no 1º ponto estável depois da Prova R1 (objetivo `notebook_prof`, Dia 28) — ainda **não** há autosave "no fim de cada arco" nem no menu de pausa (que ainda não existe, 3.15)
+- [x] `TitleScreen`: tela de menu antes do nome/personagem, com **Novo Jogo** e **Continuar** (só aparece se `HasSave()`). **Simplificação:** "Novo Jogo" com save existente já apaga o save (aviso no hint da tela, não um modal de confirmação separado); `ResetRun()` não existe ainda (não faz falta: título só aparece uma vez, no início do processo — falta quando "Voltar ao Título" existir, 3.15)
+- [x] Ao carregar: sem `ArcDirector` ainda, então retoma do **objetivo salvo exato** (`GameProgress.CurrentObjectiveId`) em vez do início de um arco — reaplica sala/gating via `QuestManager.ActivateObjective` e manda o jogador pro spawn do campus (`InteriorController.ForceCampus`)
+- [ ] Testar: salvar no Dia 28, fechar o jogo, Continuar → estado íntegro (notas, flags, estresse, dia do semestre)
 
 **3.3 Slots de Tempo Livre**
 - [ ] Painel de escolha (UI por código) aberto pelo `ArcDirector` nos pontos definidos; mostra quantos slots restam no arco
@@ -124,7 +160,7 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 ### FASE B — Sistemas de Nota e Estresse
 
 **3.4 Notas das 5 disciplinas**
-- [ ] Matemática: média das rodadas de labirinto jogadas (R1, R2, final)
+- [x] Matemática: cada rodada de prova (R1/R2/final) agora é **4 labirintos em sequência** (dificuldade crescente — o 1º é o corredor de sempre, os outros 3 são labirintos de verdade gerados por backtracking recursivo), 2,5 pontos cada, somando 0–10 (decisão de 04/07/2026, ver `MazeController.cs`/`TopDownSceneBuilder.GenerateMaze`)
 - [ ] Fundamentos: média das rodadas de debug (R1, R2, final)
 - [ ] IHC / Ética / Intro ES — base 5.0 + deltas por escolha:
 
@@ -151,6 +187,9 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 ### FASE C — Minigames que faltam
 
 **3.6 Minigame 1 — Fuga do Trote (Runner)**
+
+> **Substituído (decisão de 04/07/2026):** implementado como **perseguição no próprio campus** em vez de runner em cena separada — ver `TroteChase.cs`. Natan, Enzo, Matheus e Vitim (os mesmos NPCs dos Dias 1–3, sem NPCs "veterano" dedicados ainda) saem de onde estavam e correm atrás do jogador assim que o Dia 4 começa; pego = cena de "sujaram de ovo" (+15 estresse, flag `trote_pego`, `trote_fedendo` faz qualquer NPC comentar o cheiro pelo resto do dia); escapar = sobreviver ~20s ou entrar em qualquer prédio (`trote_escapou`). Motivo: reaproveita infraestrutura existente (NPCs, `InteriorController`, `DialogueManager`) em vez de uma cena nova só pra isso, e não exige personagens "veterano" que ainda não existem. Os itens abaixo (scroll automático, Espaço/S/D, escolha Fugir/Negociar) ficam registrados como o design original, mas não é isso que está implementado.
+- [x] Perseguição implementada (`TroteChase.cs`) — pego dá cena de ovo/sujeira + estresse + flag de cheiro; escapar por tempo ou entrando num prédio
 - [ ] Cena nova; scroll automático; Espaço pula, S abaixa, D acelera (mapear no Input System existente)
   - ⚠️ **Lição do pingue-pongue (3.7B, primeira "cena nova" real do projeto):** `SceneManager.LoadScene` recarrega o `SampleScene` inteiro do zero ao voltar, o que reabre a `TitleScreen` (ela sempre se mostra no `Start()`) e perde qualquer estado que não seja `GameProgress`. Use o mesmo padrão de handoff estático (`PingPongSession.cs`) pra guardar o que precisa sobreviver à troca de cena e sinalizar "isso é um retorno, não um jogo novo" — lido no `Awake()` (restaura posição/câmera) e no `Start()` (pula a tela de título), nessa ordem.
 - [ ] Chão via `OverlapCircle`; abaixar reduz o collider
@@ -181,10 +220,11 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 
 ### FASE D — Conteúdo Narrativo e Mundo
 
-**3.9 Side Quest 1 — Notebook Desaparecido**
-- [ ] Flags de etapa: `notebook_etapa1..4`; gatilho no Arco 2; expira após 2 visitas à convivência sem interagir → `notebook_expirado`
-- [ ] Diálogos das 4 etapas (professor → atendente do RU → laboratório do Bloco 2 → devolução) — textos prontos na Narrativa §7.1
-- [ ] Notebook = objeto interagível no Bloco 2, collider ativo só na etapa 3
+**3.9 Side Quest 1 — Notebook Desaparecido** ✅ implementada (04/07/2026, Dia 28 do calendário — ver 3.1B)
+- [x] 4 etapas em sequência no `QuestManager` (`notebook_prof` → `notebook_ru` → `notebook_lab` → `notebook_devolucao`), todas no mesmo dia — **substitui** as flags de etapa/expiração do plano original (decisão de 03/07/2026: sem expirar por visitas em dias diferentes)
+- [x] Diálogos escritos do zero (a Narrativa §7.1 não está disponível neste repositório — se o texto oficial existir, comparar e substituir depois). Professor = Aragão (reaproveitado, falas alternativas via `NpcInteractable.ObjectiveLineSet`); atendente do RU = NPC novo `atendente_ru` (reaproveita o sprite da Yasmin — sem arte própria ainda)
+- [x] Notebook = objeto interagível simples (`notebook_objeto`, sem folha de sprite — um quadrado colorido) no Bloco 2, Sala 2 (virou o "laboratório" — sala já existia, vazia, não foi preciso construir uma nova). **Simplificação:** sempre presente e interagível (como todo NPC do jogo), em vez de collider ativo só na etapa 3 — fora de ordem, falar com ele não faz nada (mesmo padrão de qualquer outro NPC de quest)
+- [x] Devolver dá +1.0 Ética e a flag `notebook_devolvido` (mantém a consequência cruzada já prevista em 3.8 — entrada secreta no labirinto final)
 
 **3.10 Side Quest 2 — Colega em Risco (Gabriel) — Arco 2, semana 6**
 - [ ] Renomear/reaproveitar o NPC "Natan" da demo como Gabriel, com o diálogo da Narrativa §5.2
@@ -239,9 +279,9 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 - [ ] Ajustar deltas da tabela 3.4 se algum final se mostrar inalcançável
 
 **3.18 Áudio**
-- [ ] 1 trilha lo-fi de exploração + 1 tensa para minigames + 1 emocional para finais (royalty-free: Pixabay/Incompetech)
+- [x] Música tema em loop (`MusicPlayer.cs`), tocando desde a tela de título — `Assets/Audio/musica_tema.mp3` (04/07/2026). Ainda falta a trilha tensa de minigames e a emocional de finais
 - [ ] SFX mínimos: passo, confirmação de diálogo, captura, coletável (opcional)
-- [ ] Volume master controlado pelo slider da pausa (3.15)
+- [ ] Volume master controlado pelo slider da pausa (3.15) — por enquanto o volume é fixo (`MusicPlayer.volume`, sem UI)
 
 **3.19 Builds Windows + Linux (NOVO)**
 - [ ] Player Settings: nome "Calouro.exe", ícone, resolução padrão 1920×1080 em janela redimensionável, `Run In Background` off

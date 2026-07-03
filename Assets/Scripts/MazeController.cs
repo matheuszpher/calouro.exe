@@ -2,19 +2,28 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Minigame "Prova-Labirinto". O labirinto fica numa região da própria cena,
-/// fora da vista do campus. Ao iniciar, teleporta o jogador para a entrada e
-/// liga um cronômetro; ao chegar na saída, o tempo vira nota (0–10) de
-/// Matemática e o jogador volta ao campus.
+/// Minigame "Prova-Labirinto". 4 labirintos em sequência, cada um numa região
+/// própria da cena, fora da vista do campus, valendo 2.5 pontos cada (soma
+/// vira a nota de Matemática). Ao iniciar, teleporta o jogador pro 1º
+/// labirinto e liga o cronômetro; ao chegar na saída, o tempo daquela rodada
+/// vira pontuação, e o jogador é teleportado pro próximo — até completar os 4.
 /// </summary>
 public class MazeController : MonoBehaviour
 {
     public static MazeController Instance { get; private set; }
     public static bool InMaze { get; private set; }
 
-    [Tooltip("Posição da entrada do labirinto (definida pelo montador).")]
-    public Vector3 mazeStart;
+    [Tooltip("Ponto de entrada de cada um dos 4 labirintos, na ordem (definido pelo montador).")]
+    public Vector3[] mazeStarts = new Vector3[4];
 
+    // Cada rodada vale 2.5 pontos; tempo bom/ruim cresce junto com o tamanho do
+    // labirinto (mapas maiores demoram mais mesmo sendo bem jogados).
+    private static readonly float[] RoundGoodTime = { 8f, 14f, 22f, 32f };
+    private static readonly float[] RoundBadTime = { 24f, 38f, 55f, 75f };
+    private const float PointsPerRound = 2.5f;
+
+    private int round;
+    private float roundsTotal;
     private float timer;
     private Vector3 returnPos;
     private GameObject player;
@@ -46,37 +55,56 @@ public class MazeController : MonoBehaviour
         EnsureRefs();
         returnPos = returnTo;
         InMaze = true;
+        round = 0;
+        roundsTotal = 0f;
         timer = 0f;
         if (cam != null) cam.useBounds = false;
-        Teleport(mazeStart);
+        Teleport(StartOf(round));
         if (timerText != null) timerText.gameObject.SetActive(true);
     }
 
+    /// <summary>Chamado pelo MazeExit da rodada atual — avança pro próximo mapa ou fecha a prova.</summary>
     public void Finish()
     {
         if (!InMaze) return;
-        InMaze = false;
 
-        // Tempo → nota: 8s ou menos = 10; 40s = 3; interpolado; limitado a [0,10].
-        float grade = Mathf.Clamp(10f - (timer - 8f) * (7f / 32f), 0f, 10f);
-        grade = Mathf.Round(grade * 10f) / 10f;
+        int goodBadIndex = Mathf.Clamp(round, 0, RoundGoodTime.Length - 1);
+        float span = Mathf.Max(0.01f, RoundBadTime[goodBadIndex] - RoundGoodTime[goodBadIndex]);
+        float factor = Mathf.Clamp01(1f - (timer - RoundGoodTime[goodBadIndex]) / span);
+        roundsTotal += factor * PointsPerRound;
+
+        round++;
+        if (round < mazeStarts.Length)
+        {
+            timer = 0f;
+            Teleport(StartOf(round));
+            ShowResult($"Mapa {round}/{mazeStarts.Length} concluído! Próximo labirinto...", 1.5f);
+            return;
+        }
+
+        // Fim dos 4 mapas: soma vira a nota de Matemática.
+        InMaze = false;
+        float grade = Mathf.Round(Mathf.Clamp(roundsTotal, 0f, 10f) * 10f) / 10f;
         GameProgress.MathGrade = grade;
 
         if (cam != null) cam.useBounds = true;
         if (timerText != null) timerText.gameObject.SetActive(false);
         Teleport(returnPos);
-        ShowResult($"Prova de Matemática concluída!\nTempo: {timer:0.0}s   Nota: {grade:0.0}\n\n(Veja na caderneta — ESC)");
+        ShowResult($"Prova de Matemática concluída!\nNota: {grade:0.0} (soma dos 4 mapas)\n\n(Veja na caderneta — ESC)");
 
         // Conclui o objetivo da prova de Matemática, se for o atual.
         QuestManager.Instance?.ForceComplete("prova_mat");
     }
+
+    private Vector3 StartOf(int r) => (r >= 0 && r < mazeStarts.Length) ? mazeStarts[r] : Vector3.zero;
 
     private void Update()
     {
         if (InMaze)
         {
             timer += Time.deltaTime;
-            if (timerText != null) timerText.text = $"Prova-Labirinto — Tempo: {timer:0.0}s";
+            if (timerText != null)
+                timerText.text = $"Prova-Labirinto — Mapa {round + 1}/{mazeStarts.Length} — Tempo: {timer:0.0}s";
         }
 
         if (resultHideAt > 0f && Time.unscaledTime >= resultHideAt)
@@ -86,11 +114,11 @@ public class MazeController : MonoBehaviour
         }
     }
 
-    private void ShowResult(string msg)
+    private void ShowResult(string msg, float duration = 4f)
     {
         if (resultText != null) resultText.text = msg;
         if (resultPanel != null) resultPanel.SetActive(true);
-        resultHideAt = Time.unscaledTime + 4f;
+        resultHideAt = Time.unscaledTime + duration;
     }
 
     private void Teleport(Vector3 pos)

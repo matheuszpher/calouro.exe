@@ -14,6 +14,7 @@ public static class ClassSchedule
     public const string RoomAragao = "BLOCO 2 (002) — Sala 1";
     public const string RoomFUP = "BLOCO 3 (003) — Sala 1";
     public const string RoomIES = "BLOCO 4 (004) — Sala 1";
+    public const string RoomBloco2Lab = "BLOCO 2 (002) — Sala 2"; // laboratório — side quest do notebook (3.9)
 
     public static string CurrentRoomId = RoomIHC;
     public static string CurrentRoomLabel = "IHC com a Rainara (Bloco 1, Sala 1)";
