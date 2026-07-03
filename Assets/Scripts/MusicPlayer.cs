@@ -32,4 +32,10 @@ public class MusicPlayer : MonoBehaviour
     {
         if (Instance == this) Instance = null;
     }
+
+    /// <summary>Para a música tema — usado ao trocar pra outra trilha (ex.: créditos finais).</summary>
+    public void Stop()
+    {
+        if (source != null) source.Stop();
+    }
 }

@@ -96,6 +96,8 @@ public class DayTransition : MonoBehaviour
             var c = creditsText.color; c.a = 1f; creditsText.color = c;
         }
 
+        MusicPlayer.Instance?.Stop(); // para a música tema antes de tocar a dos créditos, sem sobrepor
+
         if (music != null)
         {
             var musicGO = new GameObject("EndingMusic");
