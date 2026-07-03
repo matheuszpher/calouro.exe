@@ -24,6 +24,7 @@ public class DayTransition : MonoBehaviour
 
     private Image black;
     private Text message;
+    private Text creditsText;
 
     private void Awake()
     {
@@ -69,6 +70,43 @@ public class DayTransition : MonoBehaviour
         yield return Fade(1f, 0f);
 
         Active = false;
+    }
+
+    /// <summary>
+    /// Tela final do jogo (Dia 100, fim do semestre): escurece a tela igual
+    /// Play(), mas NUNCA clareia de novo — o jogo trava ali de propósito. Como
+    /// Active fica true pra sempre, tudo que já checa DayTransition.Active
+    /// (movimento do jogador, diálogo, caderneta) já fica bloqueado sozinho,
+    /// sem precisar de nenhum código extra. Toca a música dos créditos, se houver.
+    /// </summary>
+    public void PlayFinal(string text, AudioClip music)
+    {
+        StartCoroutine(RunFinal(text, music));
+    }
+
+    private IEnumerator RunFinal(string text, AudioClip music)
+    {
+        Active = true;
+
+        yield return Fade(0f, 1f);
+
+        if (creditsText != null)
+        {
+            creditsText.text = text;
+            var c = creditsText.color; c.a = 1f; creditsText.color = c;
+        }
+
+        if (music != null)
+        {
+            var musicGO = new GameObject("EndingMusic");
+            var src = musicGO.AddComponent<AudioSource>();
+            src.clip = music;
+            src.loop = true;
+            src.volume = 0.6f;
+            src.Play();
+        }
+
+        // Sem fade de volta, sem Active = false: fica travado aqui de propósito.
     }
 
     private void RepositionPlayer()
@@ -154,5 +192,25 @@ public class DayTransition : MonoBehaviour
         mRT.anchorMax = new Vector2(0.9f, 0.65f);
         mRT.offsetMin = Vector2.zero;
         mRT.offsetMax = Vector2.zero;
+
+        // Texto final (créditos) — caixa bem maior que "message", pra caber
+        // várias linhas (nomes da equipe + agradecimento). Some por padrão
+        // (alpha 0, texto vazio); só PlayFinal() preenche e mostra.
+        var creditsGO = new GameObject("Credits");
+        creditsGO.transform.SetParent(canvasGO.transform, false);
+        creditsText = creditsGO.AddComponent<Text>();
+        creditsText.font = font;
+        creditsText.fontSize = 40;
+        creditsText.alignment = TextAnchor.MiddleCenter;
+        creditsText.color = new Color(1f, 1f, 1f, 0f);
+        creditsText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        creditsText.verticalOverflow = VerticalWrapMode.Overflow;
+        creditsText.raycastTarget = false;
+        creditsText.text = "";
+        var crRT = creditsText.rectTransform;
+        crRT.anchorMin = new Vector2(0.1f, 0.1f);
+        crRT.anchorMax = new Vector2(0.9f, 0.9f);
+        crRT.offsetMin = Vector2.zero;
+        crRT.offsetMax = Vector2.zero;
     }
 }

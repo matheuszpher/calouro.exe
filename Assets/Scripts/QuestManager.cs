@@ -91,7 +91,7 @@ public class QuestManager : MonoBehaviour
         new Objective
         {
             // Concluído pela partida em si (PingPongGameController → ForceComplete ao
-            // voltar da cena do minigame). Dá Ética + alívio de estresse (ver Start).
+            // voltar da cena do minigame). Dá Ética (ver Start).
             id = "jogar_pingpong",
             titulo = "Relaxe um pouco: jogue pingue-pongue com o Vitim (na Convivência)",
             cond = Cond.Manual,
@@ -270,7 +270,14 @@ public class QuestManager : MonoBehaviour
             titulo = "Devolva o caderno ao Aragão (Bloco 2 — Sala 1)",
             cond = Cond.TalkToNpc,
             alvo = "aragao",
-            proximo = "",
+            // Encerra o Dia 28: a transição de dia já tira o jogador de qualquer
+            // sala sozinha (DayTransition.RepositionPlayer → ForceCampus), então
+            // "o boneco sai da sala" acontece de graça ao ligar o timeSkip aqui.
+            proximo = "gabriel_estudo",
+            timeSkip = true,
+            semesterDayAfterSkip = 32, // calendário dos 100 dias: SQ2 do Gabriel/Gabriela (roadmap-v2.md, 3.1B/3.10)
+            skipLine1 = "Alguns dias depois...",
+            skipLine2 = "Um colega da sua turma anda sumido das aulas — bom seria dar uma palavra com ele.",
             roomId = ClassSchedule.RoomAragao,
             roomLabel = "Bloco 2, Sala 1",
             onComplete = () =>
@@ -281,6 +288,52 @@ public class QuestManager : MonoBehaviour
                     ? $"Caderno devolvido! Ética +{granted:0.0}"
                     : "Caderno devolvido!");
             },
+        },
+
+        // ---- Dia 32 (SQ2 — Colega em Risco, roadmap 3.10) ----
+        // Gabriel (ou Gabriela, espelhando o gênero do jogador — ver
+        // GenderMirrorNpc) pede ajuda pra estudar. Ajudar dá a flag
+        // gabriel_ajudado — usada no Arco 4 pra decidir se ele aparece com uma
+        // dica antes do debug final ou deixa um bilhete.
+        new Objective
+        {
+            id = "gabriel_estudo",
+            titulo = "Um colega parece precisar de ajuda (Bloco 3, corredor)",
+            cond = Cond.TalkToNpc,
+            alvo = "gabriel",
+            // Completa assim que a saudação termina (ver QuestManager.OnTalked),
+            // antes mesmo da escolha de ajudar aparecer — por isso o salto pro
+            // Dia 100 não pode morar aqui. "final_day_gate" só segura o lugar até
+            // GabrielStudyTrigger.Accepted()/Declined() chamar ForceComplete nele
+            // no momento certo (ver anotação lá).
+            proximo = "final_day_gate",
+        },
+
+        // ---- Dia 100 (fim do semestre) ----
+        // Ligação PROVISÓRIA (decisão de 04/07/2026, ver roadmap-v2.md seção 2):
+        // os Dias 37–97 (slots livres, Coordenador, Cedro, Prova R2) ainda não
+        // existem, então o fim da SQ2 do Gabriel pula direto pro último dia, só
+        // pra ter um loop jogável do início ao fim. Quando esses dias existirem,
+        // move-se o ForceComplete("final_day_gate") pra lá em vez do
+        // GabrielStudyTrigger.
+        new Objective
+        {
+            id = "final_day_gate",
+            titulo = "",
+            cond = Cond.Manual,
+            proximo = "final_day_review",
+            timeSkip = true,
+            semesterDayAfterSkip = 100,
+            skipLine1 = "Os dias foram passando...",
+            skipLine2 = "Até que chegou o último dia do semestre.",
+        },
+        new Objective
+        {
+            id = "final_day_review",
+            titulo = "Fim do semestre — o Jeferson quer falar com você na passarela",
+            cond = Cond.Manual,
+            onActivate = () => FinalDayDirector.Instance?.BeginFinalDay(),
+            proximo = "",
         },
     };
 
@@ -323,8 +376,7 @@ public class QuestManager : MonoBehaviour
     private void Start()
     {
         // Voltando da partida de pingue-pongue (cena separada): jogar com o Vitim é
-        // uma interação social — concede Ética (com teto diário) e alivia o estresse.
-        // Feito no Start (não no Awake) porque depende do AcademicHud já existir.
+        // uma interação social — concede Ética (com teto diário).
         if (PingPongSession.MatchPlayed)
         {
             PingPongSession.MatchPlayed = false;
@@ -333,10 +385,7 @@ public class QuestManager : MonoBehaviour
             {
                 GameProgress.SetFlag("pingpong_jogado");
                 float granted = GameProgress.AddEthics(1.0f);
-                if (AcademicHud.Instance != null) AcademicHud.Instance.AddStress(-8f);
-                ShowToast(granted > 0f
-                    ? $"Boa partida! Ética +{granted:0.0} · estresse aliviado"
-                    : "Boa partida! Estresse aliviado");
+                ShowToast(granted > 0f ? $"Boa partida! Ética +{granted:0.0}" : "Boa partida!");
             }
 
             // Conclui o objetivo do ping-pong, se for o atual (encerra o Dia 1).
@@ -487,6 +536,91 @@ public class QuestManager : MonoBehaviour
 
     /// <summary>Mostra um aviso curto no topo (ex.: ganho de Ética). Reusa o toast.</summary>
     public void ShowMessage(string message) => ShowToast(message);
+
+    // ------------------------------------------------------- Gabriel/Gabriela (SQ2)
+
+    private bool revisaoRunning;
+
+    /// <summary>
+    /// Dispara a revisão geral do Gabriel/Gabriela (SQ2, Dia 32, roadmap 3.10):
+    /// aceitar ajudar ele/ela a estudar cobre rapidamente os "conteúdos" das 4
+    /// disciplinas — quiz de IES (estilo Jeferson, perguntas novas), 2 labirintos
+    /// de Matemática (estilo Aragão, mais fáceis que a prova oficial de 4 mapas),
+    /// uma pergunta de Ética e uma revisão de FUP (estilo Paulyne). Decisão de
+    /// 04/07/2026: essa é a ÚLTIMA nota de Ética do jogo — a escolha certa fecha
+    /// a nota em 10 direto, sem passar pelo teto diário de GameProgress.AddEthics
+    /// (os ganhos anteriores do jogo já somaram o resto até aqui). As demais
+    /// disciplinas usam Mathf.Max com a nota já existente: é revisão, não conta
+    /// nova — não faz sentido a nota cair por causa dela.
+    /// </summary>
+    public void StartRevisaoGeral()
+    {
+        if (revisaoRunning) return;
+        revisaoRunning = true;
+        StartCoroutine(RevisaoGeral());
+    }
+
+    private IEnumerator RevisaoGeral()
+    {
+        // Espera a resposta de flavor do Gabriel ("Valeu, sério...") fechar antes
+        // de abrir a 1ª prova por cima, senão as duas caixas de diálogo se atropelam.
+        while (DialogueManager.IsActive) yield return null;
+
+        ShowToast("Revisão geral: quiz de IES...");
+        yield return new WaitForSeconds(0.8f);
+        bool quizDone = false; float quizGrade = 0f;
+        ExamManager.Instance?.StartReviewQuiz(g => { quizGrade = g; quizDone = true; });
+        while (!quizDone) yield return null;
+        GameProgress.IesGrade = Mathf.Max(GameProgress.IesGrade, quizGrade);
+
+        yield return new WaitForSeconds(0.5f);
+        ShowToast("Revisão geral: labirintos de Matemática...");
+        yield return new WaitForSeconds(0.8f);
+        var player = GameObject.FindWithTag("Player");
+        Vector3 returnPos = player != null ? player.transform.position : Vector3.zero;
+        bool mazeDone = false; float mazeGrade = 0f;
+        MazeController.Instance?.StartMaze(returnPos, g => { mazeGrade = g; mazeDone = true; }, 2);
+        while (!mazeDone) yield return null;
+        GameProgress.MathGrade = Mathf.Max(GameProgress.MathGrade, mazeGrade);
+
+        yield return new WaitForSeconds(0.5f);
+        bool ethicsDone = false;
+        DialogueManager.Instance?.StartChoice(
+            "Reflexão",
+            "Estudando juntos, vocês encontram a resolução pronta de um exercício avaliativo que a turma ainda vai entregar. O que você faz?",
+            "Guardar só pra estudar; não repassar a resposta pronta",
+            "Espalhar a resposta pronta no grupo da turma",
+            choice =>
+            {
+                if (choice == 0)
+                {
+                    GameProgress.EthicsGrade = 10f;
+                    ShowMessage("Ética: nota final 10.0!");
+                }
+                else
+                {
+                    ShowMessage("Isso pode prejudicar quem realmente precisa aprender...");
+                }
+                ethicsDone = true;
+            });
+        while (!ethicsDone) yield return null;
+
+        yield return new WaitForSeconds(0.5f);
+        ShowToast("Revisão geral: exercício de FUP...");
+        yield return new WaitForSeconds(0.8f);
+        bool fupDone = false; float fupGrade = 0f;
+        ExamManager.Instance?.StartReviewProblem(g => { fupGrade = g; fupDone = true; });
+        while (!fupDone) yield return null;
+        GameProgress.FupGrade = Mathf.Max(GameProgress.FupGrade, fupGrade);
+
+        revisaoRunning = false;
+        ShowMessage($"Revisão concluída! IES {GameProgress.IesGrade:0.0} · Mat {GameProgress.MathGrade:0.0} · FUP {GameProgress.FupGrade:0.0} · Ética {GameProgress.EthicsGrade:0.0}");
+
+        yield return new WaitForSeconds(2.5f);
+        // Só agora, com a revisão inteira encerrada, o calendário pode virar pro
+        // Dia 100 (ver "final_day_gate" e GabrielStudyTrigger).
+        ForceComplete("final_day_gate");
+    }
 
     // ------------------------------------------------------------ Aragão (SQ1)
 

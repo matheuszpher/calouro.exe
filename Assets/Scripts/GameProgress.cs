@@ -104,4 +104,25 @@ public static class GameProgress
 
     /// <summary>Remove uma flag (usado por efeitos de duração limitada, ex.: cheiro do trote só no dia).</summary>
     public static void ClearFlag(string flag) => Flags.Remove(flag);
+
+    /// <summary>
+    /// Zera o progresso pra um novo jogo de verdade (os campos são estáticos e
+    /// sobrevivem a um SceneManager.LoadScene normal, então "Novo Jogo" sozinho
+    /// não limpa isso). PlayerName/PlayerCharacter não precisam ser zerados
+    /// aqui: a TitleScreen já pergunta os dois de novo em toda tela de "Novo Jogo".
+    /// Ainda sem chamador (a mecânica que ia usar isso — créditos de fim de jogo —
+    /// foi cortada em 04/07/2026); mantido pronto pro dia que precisar de um
+    /// reset de verdade.
+    /// </summary>
+    public static void Reset()
+    {
+        MathGrade = FupGrade = IhcGrade = IesGrade = -1f;
+        EthicsGrade = 0f;
+        EthicsGainedToday = 0f;
+        CampusTourSeen = false;
+        CurrentObjectiveId = "";
+        CurrentDay = 1;
+        SemesterDay = 1;
+        Flags.Clear();
+    }
 }

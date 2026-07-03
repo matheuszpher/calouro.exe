@@ -66,7 +66,7 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 | Progressão | `ArcDirector` (evolução do `QuestManager`) controla a sequência de marcos do arco atual. Semana avança em marcos e em slots gastos |
 | Slots de tempo livre | Menu simples (UI por código): 2 slots por arco nos Arcos 2–3, 1 no Arco 4. Estudar / Descansar / Explorar / Ajudar / RU / Café |
 | Notas IHC/Ética/Intro ES | Base 5.0 + deltas fixos por escolha (tabela em 3.4). Resumo narrado ao fim de cada arco |
-| Estresse | Por **evento** apenas (remover subida passiva). Tabela em 3.5 |
+| **Estresse removido do escopo (revoga a linha original desta tabela, decisão de 04/07/2026)** | A mecânica de estresse (barra, subida por evento/tempo, colapso a 100) **não faz mais parte do jogo** — pedido direto do time em 04/07/2026 ("essa mecânica não vai ser mais utilizada"). Revoga o item 10 da seção 2 original (colapso de estresse não é mais "nunca cortar") e a tabela de eventos de 3.5. `AcademicHud` perdeu a barra/campos de estresse; o espaço da barra (canto superior direito) virou o contador de dias restantes, que antes ficava no topo-centro. Nenhuma lógica de final (`CalcularFinal`, ainda não implementada) deve considerar estresse |
 | **Denúncia do veterano** | Nova cena de decisão no **Arco 1, logo após o trote**: um veterano exagera com outro calouro; o jogador escolhe [A] Denunciar na Direção (2º andar do Bloco Administrativo) → `veterano_denunciado` (sem dicas no Arco 4, +0.5 Ética) ou [B] Não se envolver (sem efeito) |
 | **Pausa** | ESC abre **painel de pausa** que pausa o jogo (`Time.timeScale = 0`): caderneta integrada + botões Continuar / Volume (slider) / Salvar / Voltar ao Título |
 | Cutscenes | Tela estática + texto avançando, via overlay de Canvas na própria cena (reaproveita o estilo do `DialogueManager`) |
@@ -75,7 +75,11 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 | Documentos de design | GDD e Narrativa devem ser copiados para `docs/` no repositório (tarefa 3.20) |
 | **Calendário do semestre (NOVO, decisão do time em 03/07/2026)** | O semestre passa a ter uma linha do tempo explícita de **100 dias**, com o jogador jogando **14 dias concretos** (ver tabela em 3.1B) e o resto coberto por time skips. `GameProgress.SemesterDay` (1–100) é a fonte única da verdade; `AcademicHud.week` vira **derivado** dele (`arredondar(dia ÷ 5,56)`, já que 100 não divide igual em 18 semanas) — não é mais escrito diretamente. Contador **"Faltam N dias"** fixo no topo da tela (`AcademicHud`), sempre visível. Só Matemática e Fundamentos (os 2 minigames "nunca cortar") são sempre jogados quando caem numa prova; provas narrativas (IHC/Ética/Intro ES) que caírem dentro de um time skip futuro podem virar **notícia numa tela de resumo ao voltar** (ver 3.1B), em vez de sempre jogadas |
 | **Notebook (SQ1) resolvido no mesmo dia (ajuste sobre 3.9, decisão de 03/07/2026)** | A side quest do notebook (professor → atendente do RU → laboratório do Bloco 2 → devolução) acontece **inteira no mesmo dia jogável**, sem expirar por visitas em dias diferentes — substitui o "expira após 2 visitas à convivência" de 3.9 |
-| **Gabriel/Gabriela espelha o gênero do jogador (ajuste sobre 3.10, decisão de 03/07/2026)** | O NPC da SQ2 é **Gabriel** se `GameProgress.PlayerCharacter == "calouro"` e **Gabriela** se `"caloura"` (sprite e nome trocam com o gênero, mesma convenção 6x4 do `PlayerAppearance`) |
+| **Gabriel/Gabriela espelha o gênero OPOSTO ao do jogador (ajuste sobre 3.10, decisão revisada de 04/07/2026)** | O NPC da SQ2 é **Gabriel** (sprite de `calouro.png`) se `GameProgress.PlayerCharacter == "caloura"`, e **Gabriela** (sprite de `caloura.png`) se `"calouro"` — usa as folhas do PRÓPRIO personagem principal (não arte de NPC), mesma convenção 6x4/índices de pose do `PlayerAppearance` (`GenderMirrorNpc.cs`) |
+| **Revisão geral ao aceitar ajudar o Gabriel/Gabriela (ajuste sobre 3.10, decisão de 04/07/2026)** | Independente do gênero, aceitar a sessão de estudo dispara `QuestManager.StartRevisaoGeral()`: quiz de IES com perguntas novas (`ExamManager.StartReviewQuiz`), 2 labirintos de Matemática mais fáceis que a prova oficial (`MazeController.StartMaze(..., onDone, rounds: 2)`), uma pergunta de Ética e uma revisão de FUP (`ExamManager.StartReviewProblem`). IES/Mat/FUP usam `Mathf.Max` com a nota já existente (revisão não derruba nota); a pergunta de Ética é a **última nota de Ética do jogo** — a escolha certa fecha em 10 direto, sem o teto diário de `GameProgress.AddEthics`. O gatilho é `GabrielStudyTrigger` (componente próprio), não `onChoiceA`/`onChoiceB` — ver CLAUDE.md sobre delegates não sobreviverem ao domain reload |
+| **Zoom da câmera reduzido no campus (ajuste de 04/07/2026)** | Visão "muito panorâmica" fora dos blocos — `TopDownSceneBuilder.CampusOrthoSize` foi de 8f pra 6f e depois pra **5.5f** (ajuste fino pedido em seguida). Interiores mantêm o zoom antigo (`InteriorController.InteriorOrthoSize = 8f`, calibrado com a escala 1.6x "de perto"); `InteriorController` agora empilha/restaura o zoom junto com os limites de câmera ao entrar/sair de uma sala |
+| **Correção: escolha com 2 opções cortava a última (bug de 04/07/2026)** | `DialogueManager`'s caixa de escolha usava `verticalOverflow = Truncate` numa caixa baixa demais pra pergunta + 2 opções (4 linhas) — a opção [2] ficava cortada sem erro no console. Corrigido: painel um pouco mais alto, sem linha em branco entre pergunta e opções, e `verticalOverflow = Overflow` como rede de segurança para perguntas mais longas |
+| **Dia 100 (fim do semestre) — `FinalDayDirector` (ajuste sobre 3.1/3.11, decisão de 04/07/2026)** | Liga direto no fim da SQ2 do Gabriel (Dia 32 → Dia 100, provisório — ver `QuestManager` objetivo `final_day_gate`, já que os Dias 37–97 ainda não existem). O Jeferson revisa as 5 notas uma a uma com comentário (inclusive o tom "que antiético, um 3!" pra Ética), tira a **média** (substitui o `CalcularFinal()` por-disciplina original da linha 110 desta tabela): média <4 → reprovado, 4–6,9 → avaliação final (reaproveita as provas ORIGINAIS — quiz/labirinto/FUP — não o conteúdo de revisão do Gabriel; aprova com média ≥6 na própria avaliação), ≥7 → aprovado direto. **Sem cutscene de ônibus/créditos** (decisão revisada no mesmo dia, revoga uma tentativa anterior com `EndingScene` — removida): a cena termina ali mesmo na passarela, com o Jeferson desejando "sucesso" (aprovado), "boa sorte" (passou pela avaliação final) ou "mais dedicação" (reprovado) |
 
 ### Cut-list de emergência (em ordem — cortar de cima para baixo)
 1. Minigame do Vitim (pingue-pongue, 3.7B) — flavor opcional, não afeta notas/estresse/finais; se cortar, volta a ser a linha de diálogo original ("Iai, vai marcar time de fora?" sem aceitar o convite)
@@ -87,7 +91,7 @@ Herdadas do v1: Unity; ~1h de gameplay; Minigame 3 reformulado como labirinto de
 7. Cutscene 3 (transição) cortada — fade simples
 8. Áudio: 1 trilha única
 9. Cena da denúncia do veterano vira escolha dentro de um diálogo existente
-10. **Nunca cortar:** os 3 finais, o trote jogável, os 2 labirintos gerando nota, a side quest do notebook, o colapso de estresse, o save/Continuar e o menu de pausa.
+10. **Nunca cortar:** os 3 finais, o trote jogável, os 2 labirintos gerando nota, a side quest do notebook, o save/Continuar e o menu de pausa. ~~o colapso de estresse~~ — mecânica de estresse removida do escopo em 04/07/2026 (ver seção 2).
 
 ---
 
@@ -121,11 +125,11 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 | *skip → 20* | 1→2 | "Algumas semanas depois..." — cobre resto da adaptação + convite da Calourada (1 linha/notícia) | ✅ mecanismo pronto (`semesterDayAfterSkip`) |
 | 20 | 2 (dias 18–39) | Prova R1: IHC + IES + FUP + Matemática (bloco já implementado, vira a "R1" do roadmap) | ✅ pronto |
 | 28 | 2 | Notebook desaparecido (SQ1, 3.9) — completo no mesmo dia (ver ajuste na seção 2) | ✅ pronto |
-| 32 | 2 | Gabriel/Gabriela pede ajuda — sessão de estudo (SQ2, 3.10) | ☐ a fazer |
+| 32 | 2 | Gabriel/Gabriela pede ajuda — sessão de estudo (SQ2, 3.10) | ✅ pronto (caminho A) |
 | 37 | 2 | 2º slot de tempo livre (3.3) | ☐ a fazer |
 | 48 | 3 (dias 40–72) | Slot de tempo livre (respiro do meio do semestre, 3.3) | ☐ a fazer |
 | 58 | 3 | Conversa do Coordenador (meio do semestre, 3.1 Arco 3) | ☐ a fazer |
-| 68 | 3 | Evento do Cedro (slot especial, reset parcial de estresse, 3.3/3.12) | ☐ a fazer |
+| 68 | 3 | Evento do Cedro (slot especial, 3.3/3.12) | ☐ a fazer |
 | 70 | 3 | Prova R2: Matemática (labirinto) + Fundamentos (debug) — sempre jogada (cut-list: nunca cortar) | ☐ a fazer |
 | 85 | 4 (dias 73–100) | Consequências visíveis (Gabriel/veteranos) + última conversa (resposta A/B/C) | ☐ a fazer |
 | 97 | 4 | Rodada final de provas (labirinto + debug finais) — sempre jogada → `CalcularFinal()` | ☐ a fazer |
@@ -145,19 +149,19 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 - [x] Autosave no 1º ponto estável depois da Prova R1 (objetivo `notebook_prof`, Dia 28) — ainda **não** há autosave "no fim de cada arco" nem no menu de pausa (que ainda não existe, 3.15)
 - [x] `TitleScreen`: tela de menu antes do nome/personagem, com **Novo Jogo** e **Continuar** (só aparece se `HasSave()`). **Simplificação:** "Novo Jogo" com save existente já apaga o save (aviso no hint da tela, não um modal de confirmação separado); `ResetRun()` não existe ainda (não faz falta: título só aparece uma vez, no início do processo — falta quando "Voltar ao Título" existir, 3.15)
 - [x] Ao carregar: sem `ArcDirector` ainda, então retoma do **objetivo salvo exato** (`GameProgress.CurrentObjectiveId`) em vez do início de um arco — reaplica sala/gating via `QuestManager.ActivateObjective` e manda o jogador pro spawn do campus (`InteriorController.ForceCampus`)
-- [ ] Testar: salvar no Dia 28, fechar o jogo, Continuar → estado íntegro (notas, flags, estresse, dia do semestre)
+- [ ] Testar: salvar no Dia 28, fechar o jogo, Continuar → estado íntegro (notas, flags, dia do semestre)
 
 **3.3 Slots de Tempo Livre**
 - [ ] Painel de escolha (UI por código) aberto pelo `ArcDirector` nos pontos definidos; mostra quantos slots restam no arco
 - [ ] Estudar → `StudyBonus = true` (próximo minigame: −15% na complexidade/tempo alvo; consumido ao usar)
-- [ ] Descansar → `AddStress(-10)`
+- [ ] Descansar → só flavor (sem efeito em nota, mecânica de estresse removida — seção 2, 04/07/2026)
 - [ ] Explorar → fecha o menu e libera andar pelo campus até o próximo marco (diálogos opcionais e coletáveis ativos — ver 3.13)
 - [ ] Ajudar colega → só aparece se a SQ2 estiver ativa e sem resposta
-- [ ] RU fora do horário → pista do notebook (se quest ativa) + `AddStress(-5)`
-- [ ] Café na cantina (Arcos 2–3) → `AddStress(-12)` e `AulasPuladas++` (aviso sutil no toast: "isso conta como falta…")
+- [ ] RU fora do horário → pista do notebook (se quest ativa)
+- [ ] Café na cantina (Arcos 2–3) → `AulasPuladas++` (aviso sutil no toast: "isso conta como falta…")
 - [ ] Cada slot gasto avança a semana em 1
 
-### FASE B — Sistemas de Nota e Estresse
+### FASE B — Sistemas de Nota
 
 **3.4 Notas das 5 disciplinas**
 - [x] Matemática: cada rodada de prova (R1/R2/final) agora é **4 labirintos em sequência** (dificuldade crescente — o 1º é o corredor de sempre, os outros 3 são labirintos de verdade gerados por backtracking recursivo), 2,5 pontos cada, somando 0–10 (decisão de 04/07/2026, ver `MazeController.cs`/`TopDownSceneBuilder.GenerateMaze`)
@@ -172,34 +176,33 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 | Denunciou o veterano excessivo | — | +0.5 | — |
 | Escolhas "empáticas" em diálogos-chave (3 pontos no jogo, +1.0 cada) | +1.0 | — | — |
 | Compareceu aos marcos de aula do Coordenador (por arco) | — | — | +1.5 |
-| Colapso de estresse | −1.0 em todas | | |
 | 2+ aulas puladas (aplicado no Arco 4) | −0.5 em todas | | |
 
 - [ ] Resumo narrado ao fim de cada arco: "Saíram as notas parciais de IHC e Ética: você está com X e Y"
 - [ ] Caderneta (`AcademicHud`) lendo tudo de `GameProgress.Data` (remover o array local de stub)
 
-**3.5 Estresse por evento (corrigir o passivo)**
-- [ ] Remover `stressPerSecond` do `AcademicHud`
-- [ ] Tabela de eventos: pego no trote +15 | falhar prova (nota <4) +10 | captura no debug +5 cada | ajudar Gabriel +8 | descanso −10 | RU −5 | café −12 | Cedro: reset para 30%
-- [ ] Penalidade de prova: `Stress > 70` ao iniciar labirinto/debug → 10s de input travado com overlay de "ansiedade" (escurecer bordas + texto)
-- [ ] Colapso a 100: perde o dia (avança semana), −1.0 em todas as notas, estresse volta a 50, mensagem narrada explicando o que houve
+**3.5 Estresse por evento (corrigir o passivo)** — ❌ **CORTADO (decisão de 04/07/2026, ver seção 2):** a mecânica de estresse inteira saiu do escopo, não só a subida passiva. `AcademicHud` perdeu a barra e todos os campos de estresse; nenhum dos itens abaixo será implementado.
+- [x] ~~Remover `stressPerSecond` do `AcademicHud`~~ — resolvido removendo o campo (e a mecânica) inteira
+- [ ] ~~Tabela de eventos: pego no trote +15 | falhar prova (nota <4) +10 | captura no debug +5 cada | ajudar Gabriel +8 | descanso −10 | RU −5 | café −12 | Cedro: reset para 30%~~
+- [ ] ~~Penalidade de prova: `Stress > 70` ao iniciar labirinto/debug → 10s de input travado com overlay de "ansiedade" (escurecer bordas + texto)~~
+- [ ] ~~Colapso a 100: perde o dia (avança semana), −1.0 em todas as notas, estresse volta a 50, mensagem narrada explicando o que houve~~
 
 ### FASE C — Minigames que faltam
 
 **3.6 Minigame 1 — Fuga do Trote (Runner)**
 
-> **Substituído (decisão de 04/07/2026):** implementado como **perseguição no próprio campus** em vez de runner em cena separada — ver `TroteChase.cs`. Natan, Enzo, Matheus e Vitim (os mesmos NPCs dos Dias 1–3, sem NPCs "veterano" dedicados ainda) saem de onde estavam e correm atrás do jogador assim que o Dia 4 começa; pego = cena de "sujaram de ovo" (+15 estresse, flag `trote_pego`, `trote_fedendo` faz qualquer NPC comentar o cheiro pelo resto do dia); escapar = sobreviver ~20s ou entrar em qualquer prédio (`trote_escapou`). Motivo: reaproveita infraestrutura existente (NPCs, `InteriorController`, `DialogueManager`) em vez de uma cena nova só pra isso, e não exige personagens "veterano" que ainda não existem. Os itens abaixo (scroll automático, Espaço/S/D, escolha Fugir/Negociar) ficam registrados como o design original, mas não é isso que está implementado.
-- [x] Perseguição implementada (`TroteChase.cs`) — pego dá cena de ovo/sujeira + estresse + flag de cheiro; escapar por tempo ou entrando num prédio
+> **Substituído (decisão de 04/07/2026):** implementado como **perseguição no próprio campus** em vez de runner em cena separada — ver `TroteChase.cs`. Natan, Enzo, Matheus e Vitim (os mesmos NPCs dos Dias 1–3, sem NPCs "veterano" dedicados ainda) saem de onde estavam e correm atrás do jogador assim que o Dia 4 começa; pego = cena de "sujaram de ovo" (flag `trote_pego`, `trote_fedendo` faz qualquer NPC comentar o cheiro pelo resto do dia — sem +15 estresse, mecânica removida em 04/07/2026); escapar = sobreviver ~20s ou entrar em qualquer prédio (`trote_escapou`). Motivo: reaproveita infraestrutura existente (NPCs, `InteriorController`, `DialogueManager`) em vez de uma cena nova só pra isso, e não exige personagens "veterano" que ainda não existem. Os itens abaixo (scroll automático, Espaço/S/D, escolha Fugir/Negociar) ficam registrados como o design original, mas não é isso que está implementado.
+- [x] Perseguição implementada (`TroteChase.cs`) — pego dá cena de ovo/sujeira + flag de cheiro; escapar por tempo ou entrando num prédio
 - [ ] Cena nova; scroll automático; Espaço pula, S abaixa, D acelera (mapear no Input System existente)
   - ⚠️ **Lição do pingue-pongue (3.7B, primeira "cena nova" real do projeto):** `SceneManager.LoadScene` recarrega o `SampleScene` inteiro do zero ao voltar, o que reabre a `TitleScreen` (ela sempre se mostra no `Start()`) e perde qualquer estado que não seja `GameProgress`. Use o mesmo padrão de handoff estático (`PingPongSession.cs`) pra guardar o que precisa sobreviver à troca de cena e sinalizar "isso é um retorno, não um jogo novo" — lido no `Awake()` (restaura posição/câmera) e no `Start()` (pula a tela de título), nessa ordem.
 - [ ] Chão via `OverlapCircle`; abaixar reduz o collider
-- [ ] Veteranos como triggers → 3 capturas = pego (`SetFlag("trote_pego")`, +15 estresse, mini-cutscene cômica) | chegar ao fim = `SetFlag("trote_escapou")`
+- [ ] Veteranos como triggers → 3 capturas = pego (`SetFlag("trote_pego")`, mini-cutscene cômica) | chegar ao fim = `SetFlag("trote_escapou")`
 - [ ] Escolha pré-minigame: [A] Fugir | [B] Negociar → começa com 3s de vantagem (veteranos entram atrasados)
 
 **3.7 Minigame 3 — Labirinto de Debug (Perseguição)**
 - [ ] Parametrizar `MazeController` (disciplina alvo da nota, tilemap usado, perseguidor on/off) em vez de duplicar o script
 - [ ] `PerseguidorAI` por waypoints (`MoveTowards` entre pontos pré-definidos; sem pathfinding real)
-- [ ] Captura = +8s no cronômetro (não reinicia) e +5 de estresse
+- [ ] Captura = +8s no cronômetro (não reinicia)
 - [ ] R2/final: perseguidor mais rápido + labirinto maior
 - [ ] Se `gabriel_ajudado`: antes do debug final, diálogo do Gabriel com a dica → −10s no tempo final
 
@@ -210,7 +213,7 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 - [ ] Partida termina em 7 pontos **ou** vantagem de 4 (ex.: 4×0, 5×1...), o que vier primeiro
 - [ ] IA do Vitim com dificuldade equilibrada (velocidade/erro variáveis) — deve ser possível ganhar e perder, não é nem perfeita nem trivial
 - [ ] Entre um ponto e outro, fala aleatória do Vitim — pool de 10 variações ("Boa bola!", "Pra um calouro você joga bem", "Tu já jogava antes né, safado!", etc.)
-- [ ] Ao fim da partida, volta para a Convivência (posição de retorno da mesa); resultado é só flavor — **não** afeta notas, estresse ou finais
+- [ ] Ao fim da partida, volta para a Convivência (posição de retorno da mesa); resultado é só flavor — **não** afeta notas ou finais
 - [ ] Ver cut-list (seção 2, item 1): se faltar tempo, é o primeiro corte — volta a ser só a linha de diálogo original
 
 **3.8 Variações do labirinto de Matemática**
@@ -226,11 +229,11 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 - [x] Notebook = objeto interagível simples (`notebook_objeto`, sem folha de sprite — um quadrado colorido) no Bloco 2, Sala 2 (virou o "laboratório" — sala já existia, vazia, não foi preciso construir uma nova). **Simplificação:** sempre presente e interagível (como todo NPC do jogo), em vez de collider ativo só na etapa 3 — fora de ordem, falar com ele não faz nada (mesmo padrão de qualquer outro NPC de quest)
 - [x] Devolver dá +1.0 Ética e a flag `notebook_devolvido` (mantém a consequência cruzada já prevista em 3.8 — entrada secreta no labirinto final)
 
-**3.10 Side Quest 2 — Colega em Risco (Gabriel) — Arco 2, semana 6**
-- [ ] Renomear/reaproveitar o NPC "Natan" da demo como Gabriel, com o diálogo da Narrativa §5.2
-- [ ] Caminho A: cena de estudo no Bloco 3 (diálogo do ponteiro/GPS), +8 estresse, `gabriel_ajudado`, consome 1 slot
+**3.10 Side Quest 2 — Colega em Risco (Gabriel/Gabriela) — Dia 32 (calendário 3.1B)**
+- [x] NPC `gabriel` no corredor do Bloco 3, com `GenderMirrorNpc` espelhando o gênero OPOSTO ao do jogador e usando as folhas do próprio personagem principal (ver decisão da seção 2, 04/07/2026)
+- [x] Caminho A: aceitar dá a flag `gabriel_ajudado` e dispara a revisão geral (`QuestManager.StartRevisaoGeral()` — quiz de IES, 2 labirintos de Matemática, pergunta de Ética que fecha em 10, revisão de FUP; ver decisão da seção 2)
 - [ ] Caminho B: `gabriel_recusado` → no Arco 4, bilhete na cadeira vazia ("Tive que voltar pra casa…")
-- [ ] Arco 4 (se ajudou): Gabriel aparece antes do debug final com a dica das "variáveis com nomes parecidos"
+- [ ] Arco 4 (se ajudou): Gabriel/Gabriela aparece antes do debug final com a dica das "variáveis com nomes parecidos"
 
 **3.11 Cutscenes (6) + Créditos**
 - [ ] Overlay de Canvas: imagem estática cheia + caixa de texto avançando (reaproveitar estilo do `DialogueManager`)
@@ -242,11 +245,11 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 - [ ] Coordenador: falas de todos os marcos (variantes por faixa de nota no fim do Arco 3)
 - [ ] **Cena da denúncia (novo):** após o trote, um veterano exagera com outro calouro na convivência; escolha [A] Denunciar na Direção → `veterano_denunciado` / [B] Não se envolver
 - [ ] Falas ambientes: veterano ("bem-vindo ao caos"), aluna de IA (Bloco 5), atendente do RU (marmita 13h), PAA, rã do RU
-- [ ] Dias (faz-tudo) em 2 pontos do mapa | convite da Calourada (transição Arco 1→2) | Cedro (slot especial fim do Arco 3, reset parcial de estresse)
+- [ ] Dias (faz-tudo) em 2 pontos do mapa | convite da Calourada (transição Arco 1→2) | Cedro (slot especial fim do Arco 3)
 - [ ] Mesa de ping pong: **promovida a minigame dedicado com o Vitim** (decisão do time em 01/07/2026, expansão de escopo consciente sobre a decisão original de "1 linha de diálogo") → ver 3.7B
 
 **3.13 Coletáveis e eventos de exploração (NOVO)**
-- [ ] Item coletável `IInteractable` genérico com tipo: **Apostila** (+0.3 na disciplina relacionada, máx. 1 por arco por disciplina), **Marmita do RU** (−5 estresse), **Dica de estudo** (bilhete com dica real de minigame)
+- [ ] Item coletável `IInteractable` genérico com tipo: **Apostila** (+0.3 na disciplina relacionada, máx. 1 por arco por disciplina), **Dica de estudo** (bilhete com dica real de minigame) — ~~**Marmita do RU** (−5 estresse)~~ cortada junto com a mecânica de estresse (seção 2, 04/07/2026)
 - [ ] Espalhar 2–3 coletáveis por arco em pontos que incentivem explorar (laboratórios, convivência, RU)
 - [ ] Eventos aleatórios leves durante "Explorar": ao entrar numa área, 30% de chance de um evento de 1 diálogo (colega pedindo direção, aviso no mural, fila do RU) — pool de 5–6 eventos escritos; **primeiro item da cut-list**
 
@@ -266,10 +269,9 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 - [ ] ESC dentro de diálogo/cutscene: fecha só o painel, não pula conteúdo
 
 **3.16 Feedback visual + skip de texto (NOVO)**
-- [ ] Toast discreto no canto (fila de mensagens, 2s cada): "+0.5 Ética", "−10 Estresse", "Semana 7", "Quest registrada na caderneta"
+- [ ] Toast discreto no canto (fila de mensagens, 2s cada): "+0.5 Ética", "Semana 7", "Quest registrada na caderneta"
 - [ ] Diálogo: 1º clique/tecla completa a linha instantaneamente, 2º avança (padrão do gênero)
 - [ ] Segurar tecla (ex.: Ctrl) acelera diálogos e cutscenes já vistos — **isso é a ferramenta de teste dos 3 finais**, já que não haverá menu de debug
-- [ ] Flash curto na barra de estresse ao mudar de valor
 
 **3.17 Balanceamento e verificação dos 3 finais (NOVO)**
 - [ ] Planilha rápida (pode ser comentário no código ou `docs/balanceamento.md`): nota máxima e mínima alcançável por disciplina, somando minigames + deltas + coletáveis
@@ -299,7 +301,6 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 **3.21 Estabilidade e playtest final**
 - [ ] Fluxo título → novo jogo → 4 arcos → final → créditos → título sem crash
 - [ ] Fluxo título → Continuar (save do Arco 3) → final sem crash
-- [ ] 1 colapso de estresse testado de ponta a ponta
 - [ ] Pausa aberta/fechada em exploração, diálogo e minigame sem travar estado
 - [ ] Build testada do zero por alguém de fora da equipe
 
@@ -310,7 +311,7 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 | Dia | Foco |
 |---|---|
 | 1 | 3.1 GameProgress/ArcDirector + 3.2 Save + 3.3 Slots — **nada avança sem a Fase A** |
-| 2 | 3.4 Notas + 3.5 Estresse por evento + 3.15 Pausa (é pequena e destrava teste de tudo) |
+| 2 | 3.4 Notas + 3.15 Pausa (é pequena e destrava teste de tudo) — 3.5 cortada (mecânica de estresse fora do escopo) |
 | 3 | 3.6 Runner do trote + 3.8 Variações do labirinto |
 | 4 | 3.7 Debug/perseguição + 3.9 Side Quest 1 |
 | 5 | 3.10 Side Quest 2 + 3.11 Cutscenes/créditos + 3.16 Feedback/skip |
@@ -324,11 +325,10 @@ Substitui a ideia solta de "semana" como calendário principal. O semestre tem *
 ## 5. Checklist Final de "Pronto para Entregar"
 
 - [ ] Os 4 arcos jogáveis do início ao fim sem crash, com semanas avançando na caderneta
-- [ ] 3 minigames funcionam e geram nota (trote → estresse/flags; labirintos → Matemática e Fundamentos)
+- [ ] 3 minigames funcionam e geram nota (trote → flags; labirintos → Matemática e Fundamentos)
 - [ ] As 5 disciplinas mostram notas reais e coerentes na caderneta
-- [ ] Slots de tempo livre funcionam e afetam nota/estresse
+- [ ] Slots de tempo livre funcionam e afetam nota
 - [ ] 2 side quests concluíveis ou ignoráveis, com consequência visível no Arco 4
-- [ ] Estresse: penalidade de 10s e colapso testados
 - [ ] **Save/Continuar funciona (fechar o jogo no Arco 2+ e retomar)**
 - [ ] **Menu de pausa completo (pausa real, volume, salvar, voltar ao título)**
 - [ ] **3 finais comprovadamente alcançáveis (playthroughs do 3.17 feitos) + créditos**
