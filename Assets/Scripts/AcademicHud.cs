@@ -3,19 +3,16 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// HUD acadêmico: barra de estresse (canto superior direito, sempre visível) e
-/// caderneta acadêmica (abre no ESC, pausa o jogo) com as 5 disciplinas, notas
-/// (stub), semana e estresse atual. Constrói a própria UI.
+/// HUD acadêmico: contador de dias pro fim do semestre (canto superior direito,
+/// sempre visível) e caderneta acadêmica (abre no ESC, pausa o jogo) com as 5
+/// disciplinas, notas e semana atual. Constrói a própria UI.
+/// Decisão de 04/07/2026: mecânica de estresse removida do jogo (barra e toda a
+/// lógica associada) — não faz mais parte do escopo, contrariando o "nunca
+/// cortar" original do roadmap-v2.md seção 2 (registrado lá o motivo da mudança).
 /// </summary>
 public class AcademicHud : MonoBehaviour
 {
     public static AcademicHud Instance { get; private set; }
-
-    [Header("Estresse")]
-    public float stress = 20f;
-    public float maxStress = 100f;
-    [Tooltip("Quanto o estresse sobe por segundo (placeholder pra ver a barra mexer).")]
-    public float stressPerSecond = 1f;
 
     [Header("Semestre")]
     public int totalWeeks = 18;
@@ -37,8 +34,6 @@ public class AcademicHud : MonoBehaviour
         "Matemática Básica",
         "Intro. à Engenharia de Software",
     };
-    private RectTransform stressFill;
-    private Image stressFillImg;
     private GameObject caderneta;
     private Text cadernetaText;
     private Text daysLeftText;
@@ -60,9 +55,6 @@ public class AcademicHud : MonoBehaviour
 
     private void Update()
     {
-        // Sobe devagar com o tempo (só anda quando não está pausado).
-        stress = Mathf.Clamp(stress + stressPerSecond * Time.deltaTime, 0f, maxStress);
-        UpdateStressBar();
         UpdateDaysLeft();
 
         // ESC abre/fecha a caderneta (não durante diálogo, cutscene de abertura,
@@ -74,12 +66,6 @@ public class AcademicHud : MonoBehaviour
         {
             SetCaderneta(!open);
         }
-    }
-
-    public void AddStress(float delta)
-    {
-        stress = Mathf.Clamp(stress + delta, 0f, maxStress);
-        UpdateStressBar();
     }
 
     private void SetCaderneta(bool value)
@@ -97,7 +83,6 @@ public class AcademicHud : MonoBehaviour
         sb.AppendLine("CADERNETA ACADÊMICA");
         sb.AppendLine($"Calouro: {GameProgress.PlayerName}");
         sb.AppendLine($"Dia {GameProgress.SemesterDay} de {GameProgress.SemesterTotalDays}  ·  Semana {week} / {totalWeeks}");
-        sb.AppendLine($"Estresse: {Mathf.RoundToInt(stress)}%");
         sb.AppendLine();
 
         string objetivo = QuestManager.Instance != null ? QuestManager.Instance.CurrentObjectiveTitle : "";
@@ -135,18 +120,6 @@ public class AcademicHud : MonoBehaviour
         daysLeftText.text = daysLeft == 1 ? "Falta 1 dia pro fim do semestre" : $"Faltam {daysLeft} dias pro fim do semestre";
     }
 
-    private void UpdateStressBar()
-    {
-        if (stressFill == null) return;
-        float pct = maxStress > 0f ? Mathf.Clamp01(stress / maxStress) : 0f;
-        stressFill.anchorMin = new Vector2(0f, 0f);
-        stressFill.anchorMax = new Vector2(pct, 1f);
-        stressFill.offsetMin = Vector2.zero;
-        stressFill.offsetMax = Vector2.zero;
-        if (stressFillImg != null)
-            stressFillImg.color = Color.Lerp(new Color(0.3f, 0.8f, 0.3f), new Color(0.85f, 0.2f, 0.2f), pct);
-    }
-
     // ------------------------------------------------------------------ UI
 
     private void BuildUI()
@@ -162,42 +135,17 @@ public class AcademicHud : MonoBehaviour
 
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-        // Barra de estresse (canto superior direito).
-        var bg = new GameObject("StressBar");
-        bg.transform.SetParent(canvasGO.transform, false);
-        var bgImg = bg.AddComponent<Image>();
-        bgImg.color = new Color(0f, 0f, 0f, 0.6f);
-        var bgRT = bg.GetComponent<RectTransform>();
-        bgRT.anchorMin = new Vector2(1f, 1f);
-        bgRT.anchorMax = new Vector2(1f, 1f);
-        bgRT.pivot = new Vector2(1f, 1f);
-        bgRT.anchoredPosition = new Vector2(-28f, -22f);
-        bgRT.sizeDelta = new Vector2(340f, 36f);
-
-        var fill = new GameObject("Fill");
-        fill.transform.SetParent(bg.transform, false);
-        stressFillImg = fill.AddComponent<Image>();
-        stressFillImg.color = new Color(0.3f, 0.8f, 0.3f);
-        stressFill = fill.GetComponent<RectTransform>();
-
-        var label = CreateText(bg.transform, "Label", font, 22, TextAnchor.MiddleCenter);
-        label.color = Color.white;
-        label.text = "Estresse";
-        var lRT = label.rectTransform;
-        lRT.anchorMin = Vector2.zero;
-        lRT.anchorMax = Vector2.one;
-        lRT.offsetMin = Vector2.zero;
-        lRT.offsetMax = Vector2.zero;
-
-        // Contador de dias do semestre (topo-centro, sempre visível).
-        daysLeftText = CreateText(canvasGO.transform, "DaysLeft", font, 24, TextAnchor.UpperCenter);
+        // Contador de dias do semestre (canto superior direito, sempre visível —
+        // mesmo lugar/caixa onde antes ficava a barra de estresse, removida em
+        // 04/07/2026).
+        daysLeftText = CreateText(canvasGO.transform, "DaysLeft", font, 24, TextAnchor.MiddleRight);
         daysLeftText.color = new Color(0.9f, 0.9f, 0.9f);
         var dRT = daysLeftText.rectTransform;
-        dRT.anchorMin = new Vector2(0.5f, 1f);
-        dRT.anchorMax = new Vector2(0.5f, 1f);
-        dRT.pivot = new Vector2(0.5f, 1f);
-        dRT.anchoredPosition = new Vector2(0f, -18f);
-        dRT.sizeDelta = new Vector2(480f, 34f);
+        dRT.anchorMin = new Vector2(1f, 1f);
+        dRT.anchorMax = new Vector2(1f, 1f);
+        dRT.pivot = new Vector2(1f, 1f);
+        dRT.anchoredPosition = new Vector2(-28f, -22f);
+        dRT.sizeDelta = new Vector2(340f, 36f);
 
         // Caderneta (centro).
         caderneta = new GameObject("CadernetaPanel");

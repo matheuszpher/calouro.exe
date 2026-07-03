@@ -5,9 +5,9 @@ using UnityEngine;
 /// <summary>
 /// Save em disco, 1 slot único, JSON via JsonUtility em
 /// Application.persistentDataPath. Guarda só o que precisa pra retomar de onde
-/// parou (notas, dia do semestre, objetivo atual, flags, estresse) — não a
-/// posição no mapa: quem chama Load() decide pra onde teleportar o jogador
-/// (ver TitleScreen, que manda pro campus e reativa o objetivo restaurado).
+/// parou (notas, dia do semestre, objetivo atual, flags) — não a posição no
+/// mapa: quem chama Load() decide pra onde teleportar o jogador (ver
+/// TitleScreen, que manda pro campus e reativa o objetivo restaurado).
 /// </summary>
 public static class SaveSystem
 {
@@ -21,7 +21,6 @@ public static class SaveSystem
 
         public float mathGrade, fupGrade, ihcGrade, iesGrade, ethicsGrade;
         public float ethicsGainedToday;
-        public float stress;
 
         public int currentDay;
         public int semesterDay;
@@ -47,7 +46,6 @@ public static class SaveSystem
             iesGrade = GameProgress.IesGrade,
             ethicsGrade = GameProgress.EthicsGrade,
             ethicsGainedToday = GameProgress.EthicsGainedToday,
-            stress = AcademicHud.Instance != null ? AcademicHud.Instance.stress : 20f,
             currentDay = GameProgress.CurrentDay,
             semesterDay = GameProgress.SemesterDay,
             flags = new List<string>(GameProgress.Flags),
@@ -88,8 +86,6 @@ public static class SaveSystem
 
             GameProgress.Flags.Clear();
             if (data.flags != null) foreach (var f in data.flags) GameProgress.Flags.Add(f);
-
-            if (AcademicHud.Instance != null) AcademicHud.Instance.stress = data.stress;
 
             return true;
         }

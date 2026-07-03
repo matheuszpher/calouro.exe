@@ -7,7 +7,7 @@ using UnityEngine;
 /// apareceram nos Dias 1–3 — saem de onde estavam (RU, Convivência, corredor do
 /// Bloco 4, campus) e passam a correr atrás do calouro assim que o dia começa.
 /// Ser pego gera uma cena de "sujaram você de ovo" (flag de cheiro pro resto do
-/// dia + estresse); sobreviver ao tempo do trote ou entrar em qualquer prédio
+/// dia); sobreviver ao tempo do trote ou entrar em qualquer prédio
 /// conta como escapar. Sem cena separada — a perseguição acontece no próprio
 /// campus (ver roadmap-v2.md, 3.1B/3.6).
 /// </summary>
@@ -239,7 +239,6 @@ public class TroteChase : MonoBehaviour
         {
             GameProgress.SetFlag("trote_pego");
             GameProgress.SetFlag(SmellFlag);
-            if (AcademicHud.Instance != null) AcademicHud.Instance.AddStress(15f);
             DialogueManager.Instance?.StartDialogue("Trote", CaptureLines);
         }
         else
