@@ -43,8 +43,36 @@ public class ExamManager : MonoBehaviour
     };
     private const string FupEnunciado = "Monte a solução: somar os números de 1 até N.";
 
+    // Conteúdo da revisão geral do Gabriel/Gabriela (SQ2, Dia 32, roadmap 3.10) —
+    // perguntas e passos NOVOS, distintos da prova oficial de Dia 20, pra não repetir.
+    private static readonly Question[] ReviewQuiz =
+    {
+        new Question { text = "O que é um requisito não funcional?",
+            options = new[] { "Uma qualidade do sistema, tipo desempenho ou segurança", "Uma função que o sistema executa", "Um tipo de banco de dados" }, correct = 0 },
+        new Question { text = "Por que documentar decisões de projeto é importante?",
+            options = new[] { "Não é importante", "Pra a equipe lembrar o porquê das escolhas depois", "Pra deixar o código mais lento" }, correct = 1 },
+        new Question { text = "O que caracteriza um bom trabalho em equipe num projeto de software?",
+            options = new[] { "Cada um programar sozinho, sem avisar os outros", "Comunicação e divisão clara de tarefas", "Evitar reuniões sempre" }, correct = 1 },
+        new Question { text = "Pra que serve um controle de versão (como o Git)?",
+            options = new[] { "Deixar o código mais bonito", "Aumentar a velocidade do processador", "Guardar o histórico de mudanças e permitir trabalho em conjunto" }, correct = 2 },
+        new Question { text = "O que é um bug?",
+            options = new[] { "Um novo recurso do sistema", "Um comportamento inesperado ou erro no software", "Um tipo de teste automatizado" }, correct = 1 },
+    };
+
+    private static readonly string[] ReviewFupSteps =
+    {
+        "Leia o número informado",
+        "Divida o número por 2 e observe o resto",
+        "Se o resto for 0, o número é par",
+        "Caso contrário, o número é ímpar",
+    };
+    private const string ReviewFupEnunciado = "Monte a solução: verificar se um número é par ou ímpar.";
+
     // ---- Estado ----
     private System.Action<float> onDone;
+    private Question[] activeQuiz;
+    private string[] activeFupSteps;
+    private string activeFupEnunciado;
     private int qIndex, correctCount;
     private int[] shuffled;          // ordem embaralhada exibida (índices dos passos corretos)
     private readonly List<int> picked = new List<int>(); // passos escolhidos pelo jogador (na ordem)
@@ -70,9 +98,20 @@ public class ExamManager : MonoBehaviour
 
     // ------------------------------------------------------------------ API
 
-    public void StartQuiz(System.Action<float> done)
+    public void StartQuiz(System.Action<float> done) => BeginQuiz(IesQuiz, done);
+
+    public void StartProblem(System.Action<float> done) => BeginProblem(FupSteps, FupEnunciado, done);
+
+    /// <summary>Revisão geral do Gabriel/Gabriela (roadmap 3.10) — quiz "estilo Jeferson" com perguntas novas.</summary>
+    public void StartReviewQuiz(System.Action<float> done) => BeginQuiz(ReviewQuiz, done);
+
+    /// <summary>Revisão geral do Gabriel/Gabriela (roadmap 3.10) — problema "estilo Paulyne" com passos novos.</summary>
+    public void StartReviewProblem(System.Action<float> done) => BeginProblem(ReviewFupSteps, ReviewFupEnunciado, done);
+
+    private void BeginQuiz(Question[] quiz, System.Action<float> done)
     {
         onDone = done;
+        activeQuiz = quiz;
         qIndex = 0; correctCount = 0;
         mode = Mode.Quiz;
         Active = true;
@@ -80,11 +119,13 @@ public class ExamManager : MonoBehaviour
         RenderQuestion();
     }
 
-    public void StartProblem(System.Action<float> done)
+    private void BeginProblem(string[] steps, string enunciado, System.Action<float> done)
     {
         onDone = done;
+        activeFupSteps = steps;
+        activeFupEnunciado = enunciado;
         picked.Clear();
-        shuffled = Shuffle(FupSteps.Length);
+        shuffled = Shuffle(activeFupSteps.Length);
         mode = Mode.Problem;
         Active = true;
         Show();
@@ -113,13 +154,13 @@ public class ExamManager : MonoBehaviour
 
         if (mode == Mode.Quiz)
         {
-            var q = IesQuiz[qIndex];
+            var q = activeQuiz[qIndex];
             if (pressed >= 1 && pressed <= q.options.Length)
             {
                 if (pressed - 1 == q.correct) correctCount++;
                 qIndex++;
-                if (qIndex >= IesQuiz.Length)
-                    Grade(10f * correctCount / IesQuiz.Length, $"Você acertou {correctCount} de {IesQuiz.Length}.");
+                if (qIndex >= activeQuiz.Length)
+                    Grade(10f * correctCount / activeQuiz.Length, $"Você acertou {correctCount} de {activeQuiz.Length}.");
                 else
                     RenderQuestion();
             }
@@ -135,7 +176,7 @@ public class ExamManager : MonoBehaviour
                     int ok = 0;
                     for (int pos = 0; pos < picked.Count; pos++)
                         if (shuffled[picked[pos]] == pos) ok++;
-                    Grade(10f * ok / FupSteps.Length, $"Você acertou a ordem de {ok} de {FupSteps.Length} passos.");
+                    Grade(10f * ok / activeFupSteps.Length, $"Você acertou a ordem de {ok} de {activeFupSteps.Length} passos.");
                 }
                 else RenderProblem();
             }
@@ -158,8 +199,8 @@ public class ExamManager : MonoBehaviour
 
     private void RenderQuestion()
     {
-        var q = IesQuiz[qIndex];
-        if (titleText != null) titleText.text = $"Prova de IES — pergunta {qIndex + 1}/{IesQuiz.Length}";
+        var q = activeQuiz[qIndex];
+        if (titleText != null) titleText.text = $"Prova de IES — pergunta {qIndex + 1}/{activeQuiz.Length}";
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(q.text);
         sb.AppendLine();
@@ -173,14 +214,14 @@ public class ExamManager : MonoBehaviour
     {
         if (titleText != null) titleText.text = "Prova de FUP — monte a solução";
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine(FupEnunciado);
+        sb.AppendLine(activeFupEnunciado);
         sb.AppendLine();
         sb.AppendLine("Escolha os passos na ORDEM correta de execução:");
         sb.AppendLine();
         for (int i = 0; i < shuffled.Length; i++)
         {
             string mark = picked.Contains(i) ? $" (escolhido: {picked.IndexOf(i) + 1}º)" : "";
-            sb.AppendLine($"[{i + 1}] {FupSteps[shuffled[i]]}{mark}");
+            sb.AppendLine($"[{i + 1}] {activeFupSteps[shuffled[i]]}{mark}");
         }
         if (bodyText != null) bodyText.text = sb.ToString();
         if (hintText != null) hintText.text = $"Aperte os números na ordem certa. Escolhidos: {picked.Count}/{shuffled.Length}";

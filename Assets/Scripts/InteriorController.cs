@@ -13,13 +13,22 @@ public class InteriorController : MonoBehaviour
     public static InteriorController Instance { get; private set; }
     public static bool InRoom => Instance != null && Instance.stack.Count > 0;
 
+    /// <summary>
+    /// Zoom da câmera dentro de qualquer interior (corredor ou sala) — mais
+    /// próximo que o do campus (TopDownSceneBuilder.CampusOrthoSize), calibrado
+    /// junto com a escala 1.6x "de perto" dos NPCs/jogador nesses ambientes.
+    /// </summary>
+    public const float InteriorOrthoSize = 8f;
+
     private GameObject player;
     private CameraFollow2D cam;
+    private Camera mainCamera;
 
     private struct LocState
     {
         public bool useBounds;
         public Vector2 boundsMin, boundsMax;
+        public float orthoSize;
         public Vector3 returnPos;
         public Vector3 playerScale;
     }
@@ -51,12 +60,12 @@ public class InteriorController : MonoBehaviour
         if (Instance == this) { Instance = null; stack.Clear(); }
     }
 
-    public void EnterRoom(Vector3 spawn, Vector3 returnTo, Vector2 boundsMin, Vector2 boundsMax, float playerScale = 1f)
+    public void EnterRoom(Vector3 spawn, Vector3 returnTo, Vector2 boundsMin, Vector2 boundsMax, float playerScale = 1f, float orthoSize = InteriorOrthoSize)
     {
         if (MazeController.InMaze) return;
         EnsureRefs();
 
-        // Guarda de onde viemos (câmera + retorno + escala do jogador) para
+        // Guarda de onde viemos (câmera + zoom + retorno + escala do jogador) para
         // restaurar ao sair.
         var prev = new LocState { returnPos = returnTo };
         if (cam != null)
@@ -65,6 +74,7 @@ public class InteriorController : MonoBehaviour
             prev.boundsMin = cam.boundsMin;
             prev.boundsMax = cam.boundsMax;
         }
+        if (mainCamera != null) prev.orthoSize = mainCamera.orthographicSize;
         if (player != null) prev.playerScale = player.transform.localScale;
         stack.Push(prev);
 
@@ -74,6 +84,7 @@ public class InteriorController : MonoBehaviour
             cam.boundsMax = boundsMax;
             cam.useBounds = true;
         }
+        if (mainCamera != null) mainCamera.orthographicSize = orthoSize;
         if (player != null) player.transform.localScale = new Vector3(playerScale, playerScale, 1f);
         Teleport(spawn);
     }
@@ -99,6 +110,7 @@ public class InteriorController : MonoBehaviour
             cam.boundsMax = s.boundsMax;
             cam.useBounds = s.useBounds;
         }
+        if (mainCamera != null) mainCamera.orthographicSize = s.orthoSize;
         if (player != null) player.transform.localScale = s.playerScale;
         Teleport(pos);
     }
@@ -121,6 +133,7 @@ public class InteriorController : MonoBehaviour
             cam.boundsMax = baseState.boundsMax;
             cam.useBounds = baseState.useBounds;
         }
+        if (had && mainCamera != null) mainCamera.orthographicSize = baseState.orthoSize;
         if (player != null) player.transform.localScale = Vector3.one;
         Teleport(pos);
     }
@@ -138,6 +151,7 @@ public class InteriorController : MonoBehaviour
     private void EnsureRefs()
     {
         if (player == null) player = GameObject.FindWithTag("Player");
-        if (cam == null && Camera.main != null) cam = Camera.main.GetComponent<CameraFollow2D>();
+        if (mainCamera == null) mainCamera = Camera.main;
+        if (cam == null && mainCamera != null) cam = mainCamera.GetComponent<CameraFollow2D>();
     }
 }

@@ -23,11 +23,13 @@ public class MazeController : MonoBehaviour
     private const float PointsPerRound = 2.5f;
 
     private int round;
+    private int roundsLimit;
     private float roundsTotal;
     private float timer;
     private Vector3 returnPos;
     private GameObject player;
     private CameraFollow2D cam;
+    private System.Action<float> reviewOnDone;
 
     private Text timerText;
     private GameObject resultPanel;
@@ -49,13 +51,22 @@ public class MazeController : MonoBehaviour
         if (Instance == this) { Instance = null; InMaze = false; }
     }
 
-    public void StartMaze(Vector3 returnTo)
+    /// <summary>
+    /// Inicia os labirintos. Uso normal (prova oficial, Dia 20): StartMaze(returnTo),
+    /// joga os 4 mapas e grava GameProgress.MathGrade sozinho. Uso pra revisão (ex.:
+    /// SQ2 do Gabriel/Gabriela, Dia 32): passa onDone pra receber a nota da rodada em
+    /// vez de mexer em MathGrade direto, e rounds pra jogar menos mapas (os primeiros
+    /// da lista, mais fáceis) em vez dos 4.
+    /// </summary>
+    public void StartMaze(Vector3 returnTo, System.Action<float> onDone = null, int rounds = 0)
     {
         if (InMaze) return;
         EnsureRefs();
         returnPos = returnTo;
         InMaze = true;
         round = 0;
+        roundsLimit = rounds > 0 ? Mathf.Min(rounds, mazeStarts.Length) : mazeStarts.Length;
+        reviewOnDone = onDone;
         roundsTotal = 0f;
         timer = 0f;
         if (cam != null) cam.useBounds = false;
@@ -74,22 +85,33 @@ public class MazeController : MonoBehaviour
         roundsTotal += factor * PointsPerRound;
 
         round++;
-        if (round < mazeStarts.Length)
+        if (round < roundsLimit)
         {
             timer = 0f;
             Teleport(StartOf(round));
-            ShowResult($"Mapa {round}/{mazeStarts.Length} concluído! Próximo labirinto...", 1.5f);
+            ShowResult($"Mapa {round}/{roundsLimit} concluído! Próximo labirinto...", 1.5f);
             return;
         }
 
-        // Fim dos 4 mapas: soma vira a nota de Matemática.
+        // Fim dos mapas: soma vira nota de 0 a 10 (rescalada pro total de rodadas
+        // jogadas, pra uma revisão de 2 mapas valer o mesmo range que a prova de 4).
         InMaze = false;
-        float grade = Mathf.Round(Mathf.Clamp(roundsTotal, 0f, 10f) * 10f) / 10f;
-        GameProgress.MathGrade = grade;
+        float grade = Mathf.Round(Mathf.Clamp(roundsTotal / (roundsLimit * PointsPerRound) * 10f, 0f, 10f) * 10f) / 10f;
 
         if (cam != null) cam.useBounds = true;
         if (timerText != null) timerText.gameObject.SetActive(false);
         Teleport(returnPos);
+
+        if (reviewOnDone != null)
+        {
+            var cb = reviewOnDone;
+            reviewOnDone = null;
+            ShowResult($"Revisão de Matemática concluída!\nNota da rodada: {grade:0.0}");
+            cb.Invoke(grade);
+            return;
+        }
+
+        GameProgress.MathGrade = grade;
         ShowResult($"Prova de Matemática concluída!\nNota: {grade:0.0} (soma dos 4 mapas)\n\n(Veja na caderneta — ESC)");
 
         // Conclui o objetivo da prova de Matemática, se for o atual.
@@ -104,7 +126,7 @@ public class MazeController : MonoBehaviour
         {
             timer += Time.deltaTime;
             if (timerText != null)
-                timerText.text = $"Prova-Labirinto — Mapa {round + 1}/{mazeStarts.Length} — Tempo: {timer:0.0}s";
+                timerText.text = $"Prova-Labirinto — Mapa {round + 1}/{roundsLimit} — Tempo: {timer:0.0}s";
         }
 
         if (resultHideAt > 0f && Time.unscaledTime >= resultHideAt)

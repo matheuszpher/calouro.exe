@@ -188,6 +188,20 @@ public class DialogueManager : MonoBehaviour
                     }
                 }
 
+                // Gabriel/Gabriela: aceitar ou recusar ajuda dispara a revisão geral
+                // (ver GabrielStudyTrigger — componente próprio em vez de um delegate
+                // atribuído pelo TopDownSceneBuilder, que se perderia no domain reload
+                // do Play Mode).
+                if (npc.npcId == "gabriel")
+                {
+                    var studyTrigger = npc.GetComponent<GabrielStudyTrigger>();
+                    if (studyTrigger != null)
+                    {
+                        if (choice == 0) studyTrigger.Accepted();
+                        else studyTrigger.Declined();
+                    }
+                }
+
                 // Escolha moral que dá pontos de Ética (uma vez por NPC, com teto diário).
                 float reward = choice == 0 ? npc.ethicsRewardA : npc.ethicsRewardB;
                 string ethicsFlag = "etica_" + npc.npcId;
@@ -288,7 +302,7 @@ public class DialogueManager : MonoBehaviour
         HideHint();
         ShowPanel();
         if (nameText != null) nameText.text = who;
-        if (bodyText != null) bodyText.text = $"{question}\n\n[1] {optionA}\n[2] {optionB}";
+        if (bodyText != null) bodyText.text = $"{question}\n[1] {optionA}\n[2] {optionB}";
     }
 
     /// <summary>
@@ -365,7 +379,7 @@ public class DialogueManager : MonoBehaviour
         pImg.color = new Color(0f, 0f, 0f, 0.82f);
         var pRT = panel.GetComponent<RectTransform>();
         pRT.anchorMin = new Vector2(0.05f, 0.05f);
-        pRT.anchorMax = new Vector2(0.95f, 0.28f);
+        pRT.anchorMax = new Vector2(0.95f, 0.31f);
         pRT.offsetMin = Vector2.zero;
         pRT.offsetMax = Vector2.zero;
 
@@ -416,7 +430,10 @@ public class DialogueManager : MonoBehaviour
         t.fontSize = size;
         t.alignment = anchor;
         t.horizontalOverflow = HorizontalWrapMode.Wrap;
-        t.verticalOverflow = VerticalWrapMode.Truncate;
+        // Overflow (não Truncate): uma escolha com pergunta longa + 2 opções passa
+        // facilmente de 3-4 linhas — Truncate cortava a última opção sem aviso
+        // nenhum no console (bug de 04/07/2026: "só aparece a opção 1").
+        t.verticalOverflow = VerticalWrapMode.Overflow;
         t.raycastTarget = false;
         return t;
     }

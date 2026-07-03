@@ -38,6 +38,14 @@ public static class TopDownSceneBuilder
     // Pose usada por padrão no Player: linha de cima, 1ª coluna = frente parado.
     private const int PlayerIdleFrame = 0;
 
+    // Zoom da câmera no campus (fora de qualquer bloco) — reduzido de 8f pra 6f em
+    // 04/07/2026 (visão tava "muito panorâmica" segundo feedback), depois mais um
+    // ajuste leve pra 5.5f no mesmo dia (pedido de aproximar "só um pouco mais").
+    // Interiores continuam no zoom maior de sempre (InteriorController.InteriorOrthoSize):
+    // aquele valor já foi calibrado junto com a escala 1.6x "de perto" dos NPCs,
+    // então só o campus muda aqui.
+    private const float CampusOrthoSize = 5.5f;
+
     [MenuItem("Tools/Calouro/Montar Cena Top-Down")]
     public static void BuildScene()
     {
@@ -377,6 +385,7 @@ public static class TopDownSceneBuilder
 
     // Música tema (loop, tocando desde a tela de título — ver SetupMusic/MusicPlayer).
     private const string MusicThemePath = "Assets/Audio/musica_tema.mp3";
+    private const string EndingMusicPath = "Assets/Audio/musica_creditos.mp3";
 
     private static void BuildCampus(Transform root, Sprite white)
     {
@@ -1150,6 +1159,7 @@ public static class TopDownSceneBuilder
         // principal). Yasmin anda até 4 passos (NpcPatrol); Enzo fica parado.
         // Vitim mudou pra Convivência (ver BuildConvivenciaInterior), na mesa de pingpong.
         if (label == "BLOCO 3 (003)")
+        {
             CreateAmbientNpc(interiorsRoot, "yasmin.png", new Vector2(c.x, c.y), "Yasmin", "yasmin",
                 new[]
                 {
@@ -1167,6 +1177,56 @@ public static class TopDownSceneBuilder
                     new[] { "Oi de novo! Ainda tô decorando esse mapa do campus, viu." },
                     new[] { "E aí! Achou o Bloco 4 mais fácil de achar agora?" },
                 });
+
+            // Gabriel/Gabriela — SQ2 "Colega em Risco" (roadmap 3.10, Dia 32).
+            // Nome/sprite/fala espelham o gênero OPOSTO ao escolhido pelo
+            // jogador (GenderMirrorNpc, decisão revisada de 04/07/2026: jogadora
+            // caloura → aparece o Gabriel com sprite de calouro; jogador calouro
+            // → aparece a Gabriela com sprite de caloura). Usa as folhas do
+            // próprio personagem principal (calouro.png/caloura.png), não uma
+            // arte de NPC. Os textos passados aqui em CreateAmbientNpc são só o
+            // padrão inicial (macho); GenderMirrorNpc.Apply() troca tudo certo
+            // no Start(), incluindo os índices de pose (layout 6x4 do jogador).
+            var gabrielNpc = CreateAmbientNpc(interiorsRoot, "natan.png", new Vector2(c.x, c.y - 6f), "Gabriel", "gabriel",
+                new[]
+                {
+                    "Oi! Você é o calouro novo, né? Eu sou o Gabriel.",
+                    "Cara, sinceramente, não sei se vou aguentar o semestre. Tô muito perdido no conteúdo.",
+                    "Você topa estudar comigo um pouco? Acho que sozinho eu não vou dar conta.",
+                },
+                choiceQuestion: "Ajudar seu colega a estudar agora?",
+                optionA: "Bora, vamos estudar juntos.", optionB: "Agora não consigo, foi mal.",
+                replyA: "Valeu, sério. Isso ajuda muito!", replyB: "Tudo bem... eu tento me virar.",
+                scale: 1.6f,
+                repeatLines: new[]
+                {
+                    new[] { "Valeu de novo por aquele dia de estudo." },
+                    new[] { "Ainda tô no ritmo, um dia de cada vez." },
+                });
+            // Ajudar: flag gabriel_ajudado, mais uma revisão rápida de todos os
+            // conteúdos (ver QuestManager.RevisaoGeral — decisão de 04/07/2026:
+            // revisão de IES, 2 labirintos de Matemática, 1 pergunta de Ética que
+            // fecha a nota em 10, e revisão de FUP).
+            // GabrielStudyTrigger (não onChoiceA/onChoiceB): delegate atribuído por
+            // este script de Editor não sobrevive ao domain reload do Play Mode.
+            gabrielNpc.gameObject.AddComponent<GabrielStudyTrigger>();
+
+            var mirror = gabrielNpc.gameObject.AddComponent<GenderMirrorNpc>();
+            mirror.maleFrames = LoadFrames(CalouroSpritePath);
+            mirror.femaleFrames = LoadFrames(CalouraSpritePath);
+            mirror.maleLines = new[]
+            {
+                "Oi! Você é o calouro novo, né? Eu sou o Gabriel.",
+                "Cara, sinceramente, não sei se vou aguentar o semestre. Tô muito perdido no conteúdo.",
+                "Você topa estudar comigo um pouco? Acho que sozinho eu não vou dar conta.",
+            };
+            mirror.femaleLines = new[]
+            {
+                "Oi! Você é a caloura nova, né? Eu sou a Gabriela.",
+                "Sinceramente, não sei se vou aguentar o semestre. Tô muito perdida no conteúdo.",
+                "Você topa estudar comigo um pouco? Acho que sozinha eu não vou dar conta.",
+            };
+        }
         else if (label == "BLOCO 4 (004)")
             CreateAmbientNpc(interiorsRoot, "enzo.png", new Vector2(c.x, c.y), "Enzo", "enzo",
                 new[]
@@ -1765,7 +1825,7 @@ public static class TopDownSceneBuilder
         if (camObj == null) return;
 
         var cam = camObj.GetComponent<Camera>();
-        if (cam != null) cam.orthographicSize = 8f;
+        if (cam != null) cam.orthographicSize = CampusOrthoSize;
 
         var follow = camObj.GetComponent<CameraFollow2D>() ?? camObj.AddComponent<CameraFollow2D>();
         var player = GameObject.Find("Player");
@@ -2245,6 +2305,17 @@ public static class TopDownSceneBuilder
             var exGO = new GameObject("ExamManager");
             exGO.AddComponent<ExamManager>();
         }
+
+        // Dia 100 — revisão de notas + avaliação final + tela final travada
+        // (DayTransition.PlayFinal), com a música dos créditos.
+        var fdGO = GameObject.Find("FinalDayDirector");
+        var fd = fdGO != null ? fdGO.GetComponent<FinalDayDirector>() : null;
+        if (fd == null)
+        {
+            fdGO = new GameObject("FinalDayDirector");
+            fd = fdGO.AddComponent<FinalDayDirector>();
+        }
+        fd.endingMusic = GetAudioClip(EndingMusicPath);
 
         var oldGoal = GameObject.Find("GoalZone");
         if (oldGoal != null) Object.DestroyImmediate(oldGoal);

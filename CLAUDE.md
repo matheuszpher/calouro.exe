@@ -4,7 +4,7 @@ Guia de desenvolvimento do projeto. Vale para **todo o time e para qualquer sess
 
 ## O que é o projeto
 
-**Calouro.exe — Sobrevivendo ao Primeiro Semestre**: RPG 2D top-down (pixel art) em Unity 6, ambientado no campus da UFC Quixadá. O jogador é um calouro de Engenharia de Software; notas em 5 disciplinas + barra de estresse determinam 1 de 3 finais. MVP de ~1h de gameplay, apresentado para a professora em builds **Windows e Linux**.
+**Calouro.exe — Sobrevivendo ao Primeiro Semestre**: RPG 2D top-down (pixel art) em Unity 6, ambientado no campus da UFC Quixadá. O jogador é um calouro de Engenharia de Software; notas em 5 disciplinas determinam 1 de 3 finais (mecânica de estresse removida do escopo em 04/07/2026 — ver roadmap-v2.md, seção 2). MVP de ~1h de gameplay, apresentado para a professora em builds **Windows e Linux**.
 
 Documentos-fonte (cópias devem viver em `docs/`):
 - **GDD v1** — mecânicas, minigames, sistema de pontuação
@@ -53,6 +53,7 @@ Seguem o padrão já estabelecido em `Assets/Scripts` — consistência com o ex
 - **Porta de prédio no campus**: `BuildExterior` (usado pelos 4 Blocos) só sabe fazer porta ao sul (e norte, opcional) — é a função padrão. Prédios com porta em outro lado (ex.: o RU, porta a leste desde 03/07/2026) têm builder próprio (`BuildRUBuilding`) que não passa por `BuildExterior`. Ao mudar a orientação/posição de um prédio, não presuma que a porta é sul — confira qual builder ele usa.
 - **Save em disco existe** (`SaveSystem.cs`, `Application.persistentDataPath/save.json`) — mas o autosave **não** é automático a cada avanço de objetivo; ele é ligado manualmente via `onActivate` no objetivo do ponto de checkpoint desejado (hoje: só em `notebook_prof`, Dia 28). Ao adicionar um novo marco importante, considere se ele merece um autosave também.
 - Unity-MCP (porta 8090/22377) segue instável entre sessões — na sessão de 03/07/2026 ficou fora do ar o tempo todo. Sem ele: além de Python/Pillow, **PowerShell + `System.Drawing`** também funciona pra medir/recortar/compor arte (usado pra criar `gabi.png` e medir os caminhos novos) — não precisa de Python instalado.
+- **Nunca atribua um `System.Action`/delegate a um componente a partir do `TopDownSceneBuilder` (script de Editor) esperando que ele funcione em Play Mode.** A Unity não serializa delegates; ao entrar em Play Mode ela faz um domain reload que reconstrói os componentes só a partir do que foi serializado, então qualquer lambda atribuída em tempo de Edição (fora do próprio construtor/campo da classe) vira `null` — o efeito simplesmente não dispara, sem erro no console (foi o caso de `NpcInteractable.onChoiceA/onChoiceB`, removidos em 04/07/2026 por causa disso). Campos simples (`float`, `string`, `bool`, `Sprite[]`, `int[]`) sobrevivem normalmente — só delegates/Action não. Para lógica extra por NPC/objeto que só o Editor sabe configurar, crie um componente próprio com a lógica hardcoded nele (padrão `VitimPingPongTrigger`/`GabrielStudyTrigger`: o builder só faz `AddComponent<X>()`, sem atribuir delegate nenhum) — os hooks `onActivate`/`onComplete` do `QuestManager` continuam seguros porque são lambdas definidas dentro do próprio código-fonte da classe (recriadas do zero a cada reload), não atribuídas de fora.
 
 ## Convenções de Git
 
