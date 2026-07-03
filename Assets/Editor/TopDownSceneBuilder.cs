@@ -506,7 +506,11 @@ public static class TopDownSceneBuilder
         const float saidaLegSpacingFrac = 0.4833f; // distância entre os centros das 2 pernas
         const float saidaDoorSpacing = 11f;        // portas dos Blocos 1 (x=2) e 2 (x=13)
         const float saidaArmX = -5.5f;             // o braço vai até aqui (sob a passarela — conexão sem emenda)
-        const float saidaFeetY = 15.5f;            // base das pernas (deslocado pra cima a pedido)
+        // Ajuste fino de 04/07/2026: base das pernas descida de 15,5 pra 14,3
+        // (~1,2u pra baixo) — sobrava grama entre o chão e o topo visual dos
+        // Blocos 1/2 (ctop ≈14,82); agora encosta bem (o excesso fica escondido
+        // sob o sprite do bloco, que desenha por cima — sortingOrder 3 vs -9 daqui).
+        const float saidaFeetY = 14.3f;
         // Escala uniforme: pernas a 11u ⇒ canvas quadrado ≈22,8 (sem distorção).
         float saidaCanvas = saidaDoorSpacing / saidaLegSpacingFrac;
         float saidaCenterX = saidaArmX - (saidaArmLeftFrac - 0.5f) * saidaCanvas;
