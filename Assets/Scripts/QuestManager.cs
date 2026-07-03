@@ -235,9 +235,16 @@ public class QuestManager : MonoBehaviour
             // fim da prova evita gravar um estado transitório (objetivo ainda vazio,
             // dia do semestre ainda não saltado) enquanto o time skip está rodando.
             onActivate = () => { MoveAragaoToConvivencia(); SaveSystem.Save(); },
-            // Ele volta pra sala assim que o papo acaba — é lá que a devolução
-            // acontece (objetivo "notebook_devolucao").
-            onComplete = () => MoveAragaoHome(),
+            // Ao fim do papo ele NÃO some na hora: se despede, caminha até a saída
+            // do salão (como o Jeferson anda na abertura) e só então "vai" pra sala
+            // dele esperar a devolução (objetivo "notebook_devolucao").
+            onComplete = () =>
+            {
+                if (QuestManager.Instance != null)
+                    QuestManager.Instance.StartCoroutine(QuestManager.Instance.AragaoWalksOut());
+                else
+                    MoveAragaoHome();
+            },
         },
         new Objective
         {
@@ -538,6 +545,48 @@ public class QuestManager : MonoBehaviour
         if (a == null) return;
         a.transform.position = aragaoHomePos;
         a.transform.localScale = aragaoHomeScale;
+    }
+
+    /// <summary>
+    /// Fim do papo do notebook: o Aragão se despede e caminha até a saída LESTE do
+    /// salão da Convivência (o SpriteWalkAnimator anima sozinho pela variação de
+    /// posição — só precisa soltar a pose travada da conversa) e, ao chegar,
+    /// "sai" — teleporta pra sala dele (Bloco 2, Sala 1), fora da vista do jogador,
+    /// pra estar lá esperando a devolução. Mesma ideia da saída do Jeferson na
+    /// cutscene de abertura, mas dentro do salão. Instância (precisa de coroutine),
+    /// disparada pelo onComplete estático de "notebook_prof".
+    /// </summary>
+    private IEnumerator AragaoWalksOut()
+    {
+        var a = FindAragao();
+        if (a == null) yield break;
+
+        // Sem interação/patrulha enquanto sai de cena.
+        var col = a.GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+        var patrol = a.GetComponent<NpcPatrol>();
+        if (patrol != null) patrol.enabled = false;
+        var anim = a.GetComponent<SpriteWalkAnimator>();
+        if (anim != null) anim.UnlockFacing(); // solta a pose travada da conversa pra a caminhada animar
+
+        // Alvo: borda leste do salão, numa faixa livre de móveis. O centro do salão
+        // (c) é derivado do Vitim, mesma âncora de MoveAragaoToConvivencia — o Vitim
+        // fica em c + (-4, 2.8), logo c.x = Vitim.x + 4; a borda leste do interior
+        // (26x26) fica em c.x + 12.2 (right - 0.8; ver BuildConvivenciaInterior).
+        var vitim = FindNpcById("vitim");
+        float exitX = (vitim != null ? vitim.transform.position.x + 4f : a.transform.position.x + 9f) + 12.2f;
+        Vector3 target = new Vector3(exitX, a.transform.position.y, a.transform.position.z);
+
+        const float speed = 3.6f;
+        while (Vector2.Distance(a.transform.position, target) > 0.06f)
+        {
+            a.transform.position = Vector3.MoveTowards(a.transform.position, target, speed * Time.deltaTime);
+            yield return null;
+        }
+
+        // "Saiu" pela porta: some da vista e vai esperar na sala dele.
+        MoveAragaoHome();
+        if (col != null) col.enabled = true; // reabilita pra conversar na devolução (notebook_devolucao)
     }
 
     private Objective Find(string id)

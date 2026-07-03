@@ -483,33 +483,32 @@ public static class TopDownSceneBuilder
         CreateQuad(root, "Path_009", new Vector2(2f, -14.25f), new Vector2(4f, 17.5f), path, white, -9, false);
         CreateQuad(root, "Path_Bloco4_Sul", new Vector2(13f, -8f), new Vector2(4f, 5.5f), path, white, -9, false);
 
-        // Saída norte (túnel) do Bloco 1/2 → cruza com a passarela da entrada,
-        // direcionando para o início da rua da Guarita.
-        // 4º ajuste (04/07/2026): a base do "П" (as pernas) ainda deixava um
-        // vão de grama antes de encostar nos blocos — via Editor, "aproximar
-        // levemente a parte das curvas em relação ao bloco (esticar pra
-        // baixo), sem alterar a parte mais alta". Mantém o topo exatamente
-        // onde estava (perto da passarela) e só estica a altura pra baixo, até
-        // a base das pernas encostar no topo visual dos blocos (ctop ≈14,82,
-        // igual em BuildBlocoBuilding pro Bloco 1 e 2 — arte deles diferente,
-        // mas a fração de conteúdo foi calibrada pra dar o mesmo valor).
-        // Medido por alpha em caminho_cima.png v2 (conteúdo em x 0,078–0,754,
-        // y 0,199–0,595; pernas centradas em x 0,332 e 0,667, ≈0,335 do canvas
-        // uma da outra). Largura: mesma lógica de antes (pernas exatas nas
-        // portas norte do Bloco 1 x=2 e do Bloco 2 x=13, 11 unidades). Só chão
-        // (sem colisão).
-        const float saidaLegSpacingFrac = 0.3349f;   // medido na arte: distância entre o centro das 2 pernas
-        const float saidaLegCenterFrac = 0.3318f;    // medido na arte: centro da perna esquerda
-        const float saidaContentTopFrac = 0.1994f;   // medido na arte: topo do conteúdo (barra)
-        const float saidaContentBottomFrac = 0.5949f; // medido na arte: base do conteúdo (pernas)
-        const float saidaCanvasW = 11f / saidaLegSpacingFrac; // ≈32.9 — não muda neste ajuste
-        const float saidaContentTopY = 21.2f;   // topo atual (perto da passarela) — fica como está
-        const float saidaContentBottomY = 14.82f; // topo visual dos blocos — pernas passam a encostar ali
-        const float saidaCanvasH = (saidaContentTopY - saidaContentBottomY) / (saidaContentBottomFrac - saidaContentTopFrac); // ≈16.1
-        float saidaCenterX = 2f + (0.5f - saidaLegCenterFrac) * saidaCanvasW;
-        float saidaCenterY = saidaContentBottomY + (saidaContentBottomFrac - 0.5f) * saidaCanvasH;
+        // Saída norte (túnel) do Bloco 1/2 → conecta com a passarela da entrada.
+        // Formato de "П". A arte (caminho_cima.png) é QUADRADA (1254×1254); as
+        // versões anteriores esticavam só a largura (canvas ~32,9×16,1), o que
+        // achatava o desenho na vertical e engrossava as pernas — foi o que ficou
+        // "esticado". Aqui o canvas é QUADRADO (escala uniforme = sem distorção),
+        // então as pernas ficam finas e a proporção original é preservada; a parte
+        // de cima (a barra) sobe bem acima dos pés, como pedido.
+        // As PERNAS apoiam no topo visual dos blocos (y=14,82) — como na captura —
+        // e a barra do topo cresce pra cima a partir daí (chega a y≈24,6, em grama,
+        // à direita da guarita/passarela). Largura dimensionada pra a barra NÃO
+        // cobrir a passarela (que acaba em x=-3,5): aresta esquerda para em x≈-3.
+        // Centrado no meio dos dois blocos. Só chão (sem colisão).
+        // Frações medidas por alpha na arte: conteúdo x 0,077–0,755, y 0,199–0,595;
+        // pernas centradas em x 0,332 e 0,667.
+        const float saidaContentLeftFrac = 0.0774f;   // aresta esquerda da barra
+        const float saidaContentBottomFrac = 0.5949f; // base das pernas
+        const float saidaCenterX = 7.5f;             // meio dos Blocos 1 (x=2) e 2 (x=13)
+        const float saidaLeftClearX = -3f;           // até onde a barra pode ir à esquerda (passarela acaba em -3,5)
+        const float saidaFeetY = 14.82f;             // topo visual dos blocos — as pernas apoiam aqui
+        // Escala uniforme: o tamanho do canvas quadrado sai da restrição de não
+        // invadir a passarela (aresta esquerda do conteúdo == saidaLeftClearX).
+        float saidaCanvas = (saidaCenterX - saidaLeftClearX) / (0.5f - saidaContentLeftFrac); // ≈24,8
+        // Ancorado pela base das pernas (não pelo topo): a barra sobe a partir dos pés.
+        float saidaCenterY = saidaFeetY + (saidaContentBottomFrac - 0.5f) * saidaCanvas;
         Vector2 saidaCenter = new Vector2(saidaCenterX, saidaCenterY);
-        Vector2 saidaCanvasSize = new Vector2(saidaCanvasW, saidaCanvasH);
+        Vector2 saidaCanvasSize = new Vector2(saidaCanvas, saidaCanvas);
         Sprite saidaArt = GetEnvSprite(CaminhoCimaPath, 100f, repeat: false);
         if (saidaArt != null)
             StretchedSprite(root, "Path_SaidaNorte_12", saidaCenter, saidaCanvasSize, saidaArt, -8, Color.white);
@@ -1256,6 +1255,7 @@ public static class TopDownSceneBuilder
                                 "Ei, calouro! Que bom que passou por aqui de novo.",
                                 "Confesso que tô com um probleminha: sumiu meu caderno de anotações — tinha até um esboço de questões pra próxima prova.",
                                 "Acho que esqueci ele no RU, na correria depois da última prova. Você topa dar uma olhada lá?",
+                                "Vou te esperando na minha sala — Bloco 2, Sala 1. Quando encontrar o caderno, é só me trazer lá. Valeu mesmo!",
                             },
                         },
                         new NpcInteractable.ObjectiveLineSet
@@ -1464,6 +1464,11 @@ public static class TopDownSceneBuilder
                 "Oi! Eu sou a Gabi, trabalho aqui no RU.",
                 "Precisando de alguma coisa?",
             },
+            // gabi.png foi recortada de uma folha 7x5 e cada célula ficou bem maior
+            // (187px de personagem) que a das outras folhas (108px). Sem correção
+            // ela renderiza ~1,73x maior que os demais NPCs — 0.58 ≈ 108/187 iguala
+            // a altura dela à do Natan (mesmo RU, escala 1x).
+            scale: 0.58f,
             invertSide: true,
             repeatLines: new[]
             {
