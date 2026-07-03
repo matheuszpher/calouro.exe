@@ -484,34 +484,38 @@ public static class TopDownSceneBuilder
         CreateQuad(root, "Path_Bloco4_Sul", new Vector2(13f, -8f), new Vector2(4f, 5.5f), path, white, -9, false);
 
         // Saída norte (túnel) do Bloco 1/2 → conecta com a passarela da entrada.
-        // Formato de "П". A arte (caminho_cima.png) é QUADRADA (1254×1254); as
-        // versões anteriores esticavam só a largura (canvas ~32,9×16,1), o que
-        // achatava o desenho na vertical e engrossava as pernas — foi o que ficou
-        // "esticado". Aqui o canvas é QUADRADO (escala uniforme = sem distorção),
-        // então as pernas ficam finas e a proporção original é preservada; a parte
-        // de cima (a barra) sobe bem acima dos pés, como pedido.
-        // As PERNAS apoiam no topo visual dos blocos (y=14,82) — como na captura —
-        // e a barra do topo cresce pra cima a partir daí (chega a y≈24,6, em grama,
-        // à direita da guarita/passarela). Largura dimensionada pra a barra NÃO
-        // cobrir a passarela (que acaba em x=-3,5): aresta esquerda para em x≈-3.
-        // Centrado no meio dos dois blocos. Só chão (sem colisão).
-        // Frações medidas por alpha na arte: conteúdo x 0,077–0,755, y 0,199–0,595;
-        // pernas centradas em x 0,332 e 0,667.
-        const float saidaContentLeftFrac = 0.0774f;   // aresta esquerda da barra
-        const float saidaContentBottomFrac = 0.5949f; // base das pernas
-        const float saidaCenterX = 7.5f;             // meio dos Blocos 1 (x=2) e 2 (x=13)
-        const float saidaLeftClearX = -3f;           // até onde a barra pode ir à esquerda (passarela acaba em -3,5)
-        const float saidaFeetY = 14.82f;             // topo visual dos blocos — as pernas apoiam aqui
-        // Escala uniforme: o tamanho do canvas quadrado sai da restrição de não
-        // invadir a passarela (aresta esquerda do conteúdo == saidaLeftClearX).
-        float saidaCanvas = (saidaCenterX - saidaLeftClearX) / (0.5f - saidaContentLeftFrac); // ≈24,8
-        // Ancorado pela base das pernas (não pelo topo): a barra sobe a partir dos pés.
-        float saidaCenterY = saidaFeetY + (saidaContentBottomFrac - 0.5f) * saidaCanvas;
+        // Arte "П" nova (caminho_cima.png, gerada 01/07): barra no topo, 2 pernas
+        // que descem e um BRAÇO à esquerda no topo pra encostar na passarela.
+        // Canvas QUADRADO (1254×1254) → escala uniforme, sem distorção.
+        // Ancoragem:
+        //  - as 2 pernas ficam a 11u uma da outra (= largura das portas dos Blocos
+        //    1 x=2 e 2 x=13), então a escala sai de "espaçamento das pernas = 11u";
+        //  - deslocado pra ESQUERDA até o BRAÇO entrar DEBAIXO da passarela (o braço
+        //    vai até x=-5,5, dentro da passarela) — a conexão fica sem emenda porque
+        //    a passarela desenha por cima (ver sortingOrder abaixo);
+        //  - deslocado pra CIMA (base das pernas em y=15,5) a pedido.
+        // IMPORTANTE (sortingOrder -9): este chão fica ABAIXO de tudo, menos a grama
+        // (grama/chão = -10). Passarela (-8), ruas, blocos e guarita (+3) desenham
+        // por cima — assim o caminho nunca COBRE nada; ele só "aparece" sobre a
+        // grama e some por baixo de quem cruza com ele. Por isso pode entrar sob a
+        // passarela/blocos sem problema.
+        // Frações medidas por alpha na arte: conteúdo x 0,079–0,923, y 0,388–0,707;
+        // pernas centradas em x 0,376 e 0,859 (espaçamento 0,483); braço em x 0,079.
+        const float saidaArmLeftFrac = 0.0789f;    // aresta esquerda do braço (entra sob a passarela)
+        const float saidaFeetFrac = 0.7073f;       // base das pernas
+        const float saidaLegSpacingFrac = 0.4833f; // distância entre os centros das 2 pernas
+        const float saidaDoorSpacing = 11f;        // portas dos Blocos 1 (x=2) e 2 (x=13)
+        const float saidaArmX = -5.5f;             // o braço vai até aqui (sob a passarela — conexão sem emenda)
+        const float saidaFeetY = 15.5f;            // base das pernas (deslocado pra cima a pedido)
+        // Escala uniforme: pernas a 11u ⇒ canvas quadrado ≈22,8 (sem distorção).
+        float saidaCanvas = saidaDoorSpacing / saidaLegSpacingFrac;
+        float saidaCenterX = saidaArmX - (saidaArmLeftFrac - 0.5f) * saidaCanvas;
+        float saidaCenterY = saidaFeetY + (saidaFeetFrac - 0.5f) * saidaCanvas;
         Vector2 saidaCenter = new Vector2(saidaCenterX, saidaCenterY);
         Vector2 saidaCanvasSize = new Vector2(saidaCanvas, saidaCanvas);
         Sprite saidaArt = GetEnvSprite(CaminhoCimaPath, 100f, repeat: false);
         if (saidaArt != null)
-            StretchedSprite(root, "Path_SaidaNorte_12", saidaCenter, saidaCanvasSize, saidaArt, -8, Color.white);
+            StretchedSprite(root, "Path_SaidaNorte_12", saidaCenter, saidaCanvasSize, saidaArt, -9, Color.white);
         else
             CreateQuad(root, "Path_SaidaNorte_12", new Vector2(3.5f, 17.4f), new Vector2(21f, 5f), path, white, -9, false);
 
