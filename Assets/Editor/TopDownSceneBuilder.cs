@@ -337,7 +337,7 @@ public static class TopDownSceneBuilder
 
     // Interiores (top-down) usados após a transição de tela.
     private const string BlocoInteriorPath = "Assets/Art/Campus/bloco_pixel.png";
-    private const string RUInteriorPath = "Assets/Art/Campus/ru_pixel.png";
+    private const string RUInteriorPath = "Assets/Art/Campus/ru_interno.png";
     // ac_interno.png já vem cortada (sem a borda branca do arquivo original).
     private const string ACInteriorPath = "Assets/Art/Campus/ac_interno.png";
     // sala_aula.png já vem cortada — 718x857 (aspect 0.838), paredes+lousa+carteiras
@@ -352,11 +352,15 @@ public static class TopDownSceneBuilder
     private const string ConvivenciaExtPath = "Assets/Art/Campus/convivencia_ext.png";
     // Guarita (entrada) — arte quadrada 1254x1254; conteúdo em (0.266,0.148)-(0.727,0.738).
     private const string GuaritaExtPath = "Assets/Art/Campus/guarita.png";
+    // Fachada de departamento (perspectiva, larga e baixa: conteúdo x 0.140–0.864,
+    // y 0.372–0.557 no quadrado). Prédio fechado, sem interior.
+    private const string DepartamentoExtPath = "Assets/Art/Campus/departamento.png";
     private const string GrassTilePath = "Assets/Art/Env/grass_tile.png";
     private const string BushPath = "Assets/Art/Env/bush.png";
     private const string TreePath = "Assets/Art/Env/tree.png";
     // Passarela Guarita↔Convivência. Já vem cortada — 340x1024 (aspect 0.332).
     private const string CaminhoEntradaPath = "Assets/Art/Env/caminho_entrada.png";
+    private const string MorroGramaPath = "Assets/Art/Env/morro_grama.png";
     // Estrada em H dos blocos (só chão, sem colisão). Já vem cortada — 804x708.
     private const string CaminhoBlocoPath = "Assets/Art/Env/caminho_bloco.png";
 
@@ -391,6 +395,22 @@ public static class TopDownSceneBuilder
         Label(root, "AV. JOSE DE FREITAS QUEIROZ", new Vector2(0f, 38f), Color.white);
         CreateQuad(root, "Estacionamento", new Vector2(0f, 29f), new Vector2(58f, 9f), new Color(0.26f, 0.26f, 0.28f), white, -9, false);
         Label(root, "ESTACIONAMENTO", new Vector2(0f, 29f), new Color(0.85f, 0.85f, 0.9f));
+
+        // Morrinho gramado "UFC" (canteiro/rotatória) no final do estacionamento da
+        // frente — a extremidade direita, longe da entrada da Guarita (x=-6). Arte
+        // top-down (morro_grama.png): oval de grama com borda de pedra, ocupando o
+        // meio do quadrado (conteúdo x 0.197–0.800, y 0.281–0.703). Colisão só no
+        // corpo do morro pra o jogador contornar (é um canteiro elevado).
+        Vector2 morroCenter = new Vector2(21f, 29f);
+        const float morroCanvas = 12f;
+        Sprite morroArt = GetEnvSprite(MorroGramaPath, 100f, repeat: false);
+        if (morroArt != null)
+        {
+            StretchedSprite(root, "Morro_UFC", morroCenter, new Vector2(morroCanvas, morroCanvas), morroArt, -7, Color.white);
+            // Caixa interna do oval (um pouco menor que o conteúdo, pra encostar sem travar longe).
+            CreateQuad(root, "MorroCol", morroCenter,
+                new Vector2(0.52f * morroCanvas, 0.34f * morroCanvas), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+        }
 
         // Caminhos internos (visuais/passarelas). Toda rua converge na Convivência
         // ou na rua de entrada (ao lado da Guarita) — nunca fica solta no meio do mato.
@@ -482,7 +502,7 @@ public static class TopDownSceneBuilder
         }
 
         // 007 — RU: exterior (lateral) no campus; entrar faz TRANSIÇÃO de tela para
-        // o refeitório (ru_pixel), onde está o Natan.
+        // o refeitório (ru_interno), onde está o Natan.
         BuildRUBuilding(root, "RU (007)", new Vector2(-22f, 2f), 22f,
             RUExtPath, new Vector4(0.022f, 0.301f, 0.977f, 0.627f), 0.506f, 0.627f);
 
@@ -582,11 +602,11 @@ public static class TopDownSceneBuilder
         BuildBlocoBuilding(root, "BLOCO 4 (004)", new Vector2(13f, -6f), 15.3f,
             Bloco34ExtPath, new Vector4(0.340f, 0.184f, 0.660f, 0.796f), 0.500f, 0.796f, true);
 
-        // 008 / 009 — Depósitos (fechados, sem interior). O 009 fica na mesma coluna
-        // do Bloco 3 (x=2), à mesma distância do Bloco 3 que existe entre o Bloco 1 e
-        // o Bloco 3 (16 unidades), ligado pela Path_Blocos_V + Path_009.
-        CoveredBlock(root, "DEP. (008)", new Vector2(-24f, -10f), new Vector2(6f, 3f), roofServico, 'X', false);
-        CoveredBlock(root, "DEP. (009)", new Vector2(2f, -22f), new Vector2(7f, 3f), roofServico, 'X', false);
+        // 008 / 009 — Departamentos (prédios fechados, sem interior), com a arte de
+        // fachada departamento.png. O 009 fica na mesma coluna do Bloco 3 (x=2),
+        // ligado pela Path_Blocos_V + Path_009.
+        DepartamentoBuilding(root, "DEPTO. (008)", new Vector2(-24f, -10f), 8f);
+        DepartamentoBuilding(root, "DEPTO. (009)", new Vector2(2f, -22f), 9f);
 
         // Vegetação preenchendo o gramado (clusters, longe de prédios/caminhos).
         ScatterFoliage(root);
@@ -614,7 +634,7 @@ public static class TopDownSceneBuilder
         Block(2, 10, 7, 11, 1.5f); Block(13, 10, 7, 11, 1.5f);
         Block(2, -6, 7, 11, 1.5f); Block(13, -6, 7, 11, 1.5f);
         Block(-22, 2.8f, 18, 9, 1.5f); Block(-6, 22, 5, 4, 1.5f);
-        Block(-24, -10, 6, 3, 1.5f); Block(2, -22, 7, 3, 1.5f);
+        Block(-24, -10, 8, 3, 1.5f); Block(2, -22, 9, 3, 1.5f); // Departamentos 008/009
         Block(-7, 2, 11, 10, 1.5f);                      // Convivência / spawn
         Block(1, 2, 28, 5, 1f); Block(2, -2, 4, 28, 1f); // caminhos (praça central / coluna esq.)
         Block(2, -19, 4, 8, 1f); Block(-6, 15, 4, 14, 1f);
@@ -767,6 +787,36 @@ public static class TopDownSceneBuilder
 
         Label(root, label, new Vector2(center.x, center.y), new Color(0.96f, 0.96f, 0.88f));
         return frontPos;
+    }
+
+    /// <summary>
+    /// Prédio de departamento (fachada perspectiva departamento.png), fechado e sem
+    /// interior — substitui os antigos placeholders "DEP.". Coloca a arte e uma
+    /// colisão sólida só no corpo desenhado (conteúdo x 0.140–0.864, y 0.372–0.557,
+    /// mesmo padrão da guarita/convivência). visibleWidth = largura do prédio em unidades.
+    /// </summary>
+    private static void DepartamentoBuilding(Transform root, string label, Vector2 center, float visibleWidth)
+    {
+        float canvas = visibleWidth / 0.724f;
+        Sprite art = GetEnvSprite(DepartamentoExtPath, 100f, repeat: false);
+        if (art != null)
+        {
+            StretchedSprite(root, "Ext_" + label, center, new Vector2(canvas, canvas), art, 3, Color.white);
+            float dl = center.x + (0.140f - 0.5f) * canvas;
+            float dr = center.x + (0.864f - 0.5f) * canvas;
+            float dtop = center.y + (0.5f - 0.372f) * canvas;
+            float dbot = center.y + (0.5f - 0.557f) * canvas;
+            CreateQuad(root, "DepCol_" + label, new Vector2((dl + dr) / 2f, (dbot + dtop) / 2f),
+                new Vector2(dr - dl, dtop - dbot), new Color(0f, 0f, 0f, 0f), s_white, 0, true);
+            // Rótulo sobre o corpo do prédio (conteúdo centrado em y-frac 0.4645).
+            Label(root, label, new Vector2(center.x, center.y + (0.5f - 0.4645f) * canvas),
+                new Color(0.96f, 0.96f, 0.88f));
+        }
+        else
+        {
+            CoveredBlock(root, label, center, new Vector2(visibleWidth, 3f),
+                new Color(0.42f, 0.48f, 0.30f), 'X', false);
+        }
     }
 
     private static void EnsureInteriorsRoot()
@@ -1122,7 +1172,7 @@ public static class TopDownSceneBuilder
     }
 
     /// <summary>
-    /// Monta o INTERIOR do RU (arte top-down ru_pixel) numa região afastada. Salão
+    /// Monta o INTERIOR do RU (arte top-down ru_interno) numa região afastada. Salão
     /// central caminhável (entre norm 0.242 e 0.708), laterais sólidas, tapete de
     /// saída (RoomExit) na base e o Natan dentro. Retorna (spawn, mín, máx).
     /// </summary>
@@ -1144,8 +1194,10 @@ public static class TopDownSceneBuilder
         else
             CreateQuad(interiorsRoot, "Refeitorio_" + label, c, size, new Color(0.4f, 0.42f, 0.44f), s_white, -10, false);
 
-        float hallLeft = leftEdge + 0.242f * size.x;
-        float hallRight = leftEdge + 0.708f * size.x;
+        // Colisões medidas na arte ru_interno.png (salão centrado): floor caminhável
+        // de 0.240 a 0.760 na largura; parede inferior sólida (a saída é o tapete).
+        float hallLeft = leftEdge + 0.240f * size.x;
+        float hallRight = leftEdge + 0.760f * size.x;
         // Laterais sólidas.
         CreateQuad(interiorsRoot, "RkL_" + label, new Vector2((leftEdge + hallLeft) / 2f, c.y),
             new Vector2(hallLeft - leftEdge, size.y), clear, s_white, 0, true);
@@ -1154,9 +1206,13 @@ public static class TopDownSceneBuilder
         // Topo fechado.
         CreateQuad(interiorsRoot, "RkT_" + label, new Vector2((hallLeft + hallRight) / 2f, top - 0.3f),
             new Vector2(hallRight - hallLeft, 0.6f), clear, s_white, 0, true);
-        // Base: cantos sólidos + vão central + tapete de saída.
-        float gL = leftEdge + 0.294f * size.x;
-        float gR = leftEdge + 0.670f * size.x;
+        // Balcão de comida (estrutura sólida perto do topo: x 0.34–0.66, y 0.15–0.29).
+        CreateQuad(interiorsRoot, "RkBalcao_" + label,
+            new Vector2(c.x, c.y + (0.5f - 0.22f) * size.y),
+            new Vector2(0.32f * size.x, 0.14f * size.y), clear, s_white, 0, true);
+        // Base: cantos sólidos + vão central (tapete de saída), simétrico ao centro.
+        float gL = leftEdge + 0.360f * size.x;
+        float gR = leftEdge + 0.640f * size.x;
         CreateQuad(interiorsRoot, "RkBotL_" + label, new Vector2((hallLeft + gL) / 2f, bottom + 0.3f),
             new Vector2(gL - hallLeft, 0.6f), clear, s_white, 0, true);
         CreateQuad(interiorsRoot, "RkBotR_" + label, new Vector2((gR + hallRight) / 2f, bottom + 0.3f),
